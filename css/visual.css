@@ -1,0 +1,167 @@
+/*
+ * js/visual.js 的樣式：滑桿、刻度條、小圖示、曲線圖。
+ * 顏色沿用 style.css 的變數：--accent 是目前的值，--gold 是原廠值。
+ * 曲線圖（.vz-chart）畫在深色的儀表板裡，底色與裡面用的顏色變數在 style.css 檔尾「儀表板」那一段指定，
+ * 第二條線的藍色（--vz-2）也在那裡；這個檔開頭的 --vz-* 是卡片縮圖、滑桿、刻度條用的。
+ */
+
+:root {
+  --vz-2: #2a78d6;
+  --vz-track: #cdd2d9;
+  --vz-axis: #aab0ba;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --vz-2: #3987e5;
+    --vz-track: #3a3d43;
+    --vz-axis: #50545b;
+  }
+}
+
+/* 欄位下方的附加物：每樣都只占一行 */
+.vz { display: grid; gap: 2px; }
+.vz [hidden] { display: none; }
+
+.vz-end { flex: none; color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* 滑桿 */
+
+.vz-slider { display: flex; align-items: center; gap: 8px; }
+.vz-track { position: relative; flex: 1; min-width: 0; height: 28px; }
+
+/* --p 是 0 到 1 的位置；把手寬 18px，所以軌道兩端各留 9px 才會對準把手中心 */
+.vz-range {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 28px;
+  margin: 0;
+  background: none;
+  cursor: pointer;
+  --p: 0;
+}
+.vz-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) calc(9px + (100% - 18px) * var(--p)), var(--vz-track) 0);
+}
+.vz-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: -7px;
+  border: 2px solid var(--bg);
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+.vz-range::-moz-range-track { height: 4px; border-radius: 2px; background: var(--vz-track); }
+.vz-range::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+.vz-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--bg);
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* 還沒有值：軌道不上色，把手空心 */
+.is-unset .vz-range::-webkit-slider-runnable-track { background: var(--vz-track); }
+.is-unset .vz-range::-webkit-slider-thumb { background: var(--bg); border-color: var(--muted); box-shadow: none; }
+.is-unset .vz-range::-moz-range-progress { background: var(--vz-track); }
+.is-unset .vz-range::-moz-range-thumb { background: var(--bg); border-color: var(--muted); box-shadow: none; }
+
+/* 原廠值的位置：比把手高，值和原廠相同時仍看得到上下兩端 */
+.vz-tick {
+  position: absolute;
+  top: 2px;
+  left: calc(9px + (100% - 18px) * var(--p, 0));
+  width: 2px;
+  height: 24px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--gold);
+  pointer-events: none;
+}
+
+.vz-warn { margin: 0; color: var(--accent); font-size: 12px; font-weight: 600; }
+
+.vz-range:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* 刻度條 */
+
+.vz-scale { display: flex; align-items: center; gap: 8px; min-height: 22px; }
+.vz-cells { display: flex; flex: 1; gap: 2px; min-width: 0; }
+.vz-cell { position: relative; flex: 1; height: 9px; border-radius: 1px; background: var(--vz-track); }
+.vz-cell.is-on { background: var(--accent); }
+.vz-cell.is-factory::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--gold);
+}
+
+/* 小圖示 */
+
+.vz-glyph { display: flex; align-items: center; gap: 6px; min-height: 24px; color: var(--muted); font-size: 12px; }
+.vz-glyph svg { flex: none; width: 22px; height: 22px; color: var(--accent); fill: currentColor; }
+.vz-glyph svg .s { fill: none; stroke: currentColor; stroke-width: 3.5; stroke-linecap: round; stroke-linejoin: round; }
+
+.vz-lock { margin: 0; color: var(--gold); font-size: 12px; }
+
+/* 曲線圖 */
+
+.vz-chart { margin: 4px 0; max-width: 460px; padding: 8px 12px; }   /* 底色與邊框在 style.css 的「儀表板」 */
+.vz-chart figcaption { font: 800 13.5px/1.4 var(--font-race); letter-spacing: 0.02em; }
+.vz-svg { display: block; width: 100%; height: auto; }
+
+.vz-text { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.vz-grid { stroke: var(--line); stroke-width: 1; }
+.vz-axis { stroke: var(--vz-axis); stroke-width: 1; }
+.vz-mark { stroke: var(--muted); stroke-width: 1; opacity: 0.6; }
+
+.vz-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.vz-line.vz-main, .vz-line.vz-guess { stroke: var(--accent); }
+.vz-line.vz-alt { stroke: var(--vz-2); }
+.vz-line.vz-ref { stroke: var(--muted); }
+.vz-line.vz-guess { stroke-dasharray: 6 5; }
+.vz-line.vz-ref { stroke-dasharray: 2 5; }
+.vz-area { fill: var(--accent); opacity: 0.1; }
+.vz-dot { stroke: var(--card); stroke-width: 2; }
+.vz-dot.vz-main { fill: var(--accent); }
+.vz-dot.vz-alt { fill: var(--vz-2); }
+
+.vz-legend { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 0; padding: 0; list-style: none; font-size: 12px; }
+.vz-legend li { display: flex; align-items: center; gap: 6px; }
+.vz-key { flex: none; width: 16px; height: 0; border-top: 2px solid var(--accent); }
+.vz-key.vz-alt { border-top-color: var(--vz-2); }
+.vz-key.vz-ref { border-top: 2px dotted var(--muted); }
+.vz-key.vz-guess { border-top-style: dashed; }
+
+.vz-note { margin: 2px 0 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+
+/* 釘在編輯頁上方的圖：高度有上限，留畫面給下面的欄位 */
+.vz-pin .vz-chart { margin: 0 auto; padding: 6px 10px; }
+.vz-pin .vz-svg { max-height: 148px; }
+
+/* 總覽頁卡片上的縮圖：放在卡片右下角，卡片高度不變 */
+.vz-thumb { position: absolute; right: 6px; bottom: 5px; width: 42%; pointer-events: none; }
+.vz-thumb .vz-svg { max-height: 30px; }
+.vz-thumb .vz-dot { stroke: none; }
+.card-btn:has(.vz-thumb) .card-line { padding-right: 46%; }
+
+/* 資料檔自己畫的圖（build 回傳 svg）用的形狀：本體、凸出的零件、孔、尺寸線、舵片 */
+.vz-shape { fill: var(--dg-body); stroke: var(--muted); stroke-width: 1; }
+.vz-shape2 { fill: var(--dg-part); stroke: var(--muted); stroke-width: 1; }
+.vz-hole { fill: var(--card); stroke: var(--muted); stroke-width: 1; }
+.vz-dim { fill: none; stroke: var(--muted); stroke-width: 0.75; }
+.vz-horn { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }

@@ -1,0 +1,285 @@
+/*
+ * 設定理論頁（theory.html）專用的樣式。整站共用的競技風格（顏色變數、頁首、斜切的按鈕、小標題、
+ * 賽道與儀表板）在 css/style.css，這裡只放這一頁才有的東西。
+ */
+
+:root {
+  --zone-front: #1f7ae0;     /* 項目鈕的色條：前軸、車身與全車、後軸 */
+  --zone-mid: #7b838e;
+  --zone-rear: #e8590c;
+  --ph-in: #5aa9ff;          /* 入彎、彎中、出彎三個階段的顏色 */
+  --ph-mid: #ffc400;
+  --ph-out: #3ddc84;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --zone-front: #3d94ff;
+    --zone-mid: #8a919b;
+    --zone-rear: #ff7a1a;
+  }
+}
+
+/* ---------- 頁首：這一頁沒有分類頁籤，改顯示標題與一行英文小字 ---------- */
+
+.th-top h1 { display: block; font-size: 21px; }   /* 窄螢幕也顯示標題 */
+.th-kicker { color: rgba(255, 255, 255, 0.55); font: 700 11px/1 var(--font-race); letter-spacing: 0.2em; white-space: nowrap; }
+.th-home { flex: none; padding: 14px 8px 14px 0; color: #ff5a4f; font: 700 13px/1 var(--font-race); text-decoration: none; }
+
+/* ---------- 搜尋與症狀查詢 ---------- */
+
+.th-find { display: flex; gap: 8px; margin-bottom: 6px; }
+.th-q {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--field);
+  font-size: 16px;   /* 16px 以上，iOS 才不會聚焦時自動放大 */
+  -webkit-appearance: none;   /* iOS 的搜尋框預設是圓角膠囊，改成和其他輸入框一樣 */
+  appearance: none;
+}
+.th-goalbtn { flex: none; }
+.th-goalbtn::after { content: " ▾"; color: var(--muted); }
+.th-goalbtn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.th-goalbtn[aria-expanded="true"]::after { content: " ▴"; color: inherit; }
+
+.th-panel {
+  margin-bottom: 6px;
+  padding: 6px 12px 8px;
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 3px;
+  background: var(--card);
+}
+.th-goalrow { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; padding: 4px 0; }
+.th-goalrow-name { flex: 1 1 100%; color: var(--muted); font: 700 12px/1.4 var(--font-race); letter-spacing: 0.03em; }
+
+.th-goal { min-height: 40px; padding: 0 13px; background: var(--bg); font-size: 13px; font-weight: 700; }
+.th-goal.is-on { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+
+/* 查詢中的橫幅：黃底黑字，像賽道上的旗號訊息 */
+.th-now {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 5px 10px 5px 12px;
+  border-radius: 3px;
+  background: var(--plate);
+  color: var(--plate-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.th-now-text { flex: 1; min-width: 0; }
+.th-now b { font: 800 14px/1.3 var(--font-race); }
+.th-now .btn-small { border-color: #0d0f12; background: #0d0f12; color: #ffffff; }
+
+/* ---------- 總覽：項目圍著賽道上的車 ---------- */
+
+.th-stage { gap: 4px; }
+.th-stage .stage-mid { grid-template-columns: minmax(0, 1fr) 40% minmax(0, 1fr); gap: 4px; }
+.th-stage .stage-col { gap: 4px; }
+.th-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+
+.th-chip {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 2px 5px 2px 7px;
+  border-left: 4px solid var(--zone-mid);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: left;
+}
+.th-chip[data-zone="front"] { border-left-color: var(--zone-front); }
+.th-chip[data-zone="rear"] { border-left-color: var(--zone-rear); }
+.th-chip-name { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.th-chip-dir { display: flex; flex: none; flex-direction: column; gap: 1px; }
+.th-chip-tag {   /* 方向標籤：黃底黑字的號碼牌 */
+  padding: 0 4px;
+  border-radius: 2px;
+  background: var(--plate);
+  color: var(--plate-text);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+  white-space: nowrap;
+}
+.th-chip-dir.is-two .th-chip-tag { font-size: 10px; line-height: 14px; }   /* 兩個方向上下疊 */
+.th-chip-dir.is-weak .th-chip-tag { background: none; box-shadow: inset 0 0 0 1.5px var(--plate-line); color: var(--text); }
+.th-chip.is-hit {
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  border-bottom-color: var(--accent);
+  box-shadow: 0 0 10px var(--glow);
+}
+.th-chip.is-dim { opacity: 0.42; }
+.th-chip:hover { border-top-color: var(--muted); border-right-color: var(--muted); border-bottom-color: var(--muted); }
+
+/* 窄螢幕：車圖縮小一點、項目鈕的留白收一點，五個字的名稱加上方向標籤才放得下 */
+@media (max-width: 380px) {
+  .th-stage .stage-mid { grid-template-columns: minmax(0, 1fr) 34% minmax(0, 1fr); }
+  .th-chip { padding-right: 4px; padding-left: 6px; font-size: 12.5px; }
+  .th-kicker { display: none; }
+}
+
+/* 這一頁的車圖不畫車殼的虛線；下擺臂轉軸畫在銀色車架上，要用深色才看得到 */
+.th-stage .dg-shell { display: none; }
+.th-stage .td-hinge { stroke: #5c626b; }
+.th-stage .is-hot.td-hinge { stroke: var(--accent); }
+
+.th-legend { display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 8px; color: var(--muted); font-size: 12px; }
+.th-key::before { content: ""; display: inline-block; width: 4px; height: 11px; margin-right: 5px; background: var(--zone-mid); vertical-align: -1px; }
+.th-key[data-zone="front"]::before { background: var(--zone-front); }
+.th-key[data-zone="rear"]::before { background: var(--zone-rear); }
+
+/* ---------- 查詢結果 ---------- */
+
+.th-h { margin-bottom: 6px; }
+.th-res-list li { margin-bottom: 6px; }
+.th-res {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--zone-mid);
+  border-radius: 3px;
+  background: var(--card);
+  text-align: left;
+}
+.th-res[data-zone="front"] { border-left-color: var(--zone-front); }
+.th-res[data-zone="rear"] { border-left-color: var(--zone-rear); }
+.th-res-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.th-res-opt { flex: 1 1 auto; color: var(--accent); font: 800 16px/1.3 var(--font-race); }
+.th-res-opt::after { content: " ››"; font-weight: 400; }
+.th-res-where { flex: none; color: var(--muted); font: 600 12px/1.3 var(--font-race); letter-spacing: 0.03em; }
+.th-res-fx { display: block; margin-top: 3px; font-size: 14px; }
+
+.th-also { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; color: var(--muted); font-size: 13px; }
+.th-also .th-goal { color: var(--text); }
+
+/* ---------- 內容頁 ---------- */
+
+.th-cap { margin-top: 3px; color: var(--muted); font-size: 12px; line-height: 1.4; text-align: center; }
+.th-body .th-now { margin-top: 8px; margin-bottom: 0; }
+.th-intro { margin-top: 10px; font-size: 14px; }
+
+.th-opt { margin-top: 8px; border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 3px; background: var(--card); }
+.th-opt.is-on { border-color: var(--accent); box-shadow: 0 0 12px var(--glow); }
+.th-opt-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  font: 800 16px/1.3 var(--font-race);
+  text-align: left;
+}
+/* 選取記號：一次只能選一個方向，所以用圓點 */
+.th-radio { flex: none; width: 14px; height: 14px; border: 2px solid var(--muted); border-radius: 50%; }
+.th-opt.is-on .th-radio { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--card); }
+.th-opt.is-on .th-opt-head { color: var(--accent); }
+.th-opt-sub { display: block; color: var(--muted); font: 400 12px/1.4 system-ui, -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif; }
+.th-use { padding: 0 10px 6px 36px; color: var(--muted); font-size: 13px; }
+.th-opt.is-plain .th-fx { padding-left: 12px; }
+
+.th-fx { padding: 0 10px 8px 36px; font-size: 14px; }
+.th-fx li, .th-keys li { position: relative; padding: 3px 0 3px 15px; }
+.th-fx li::before, .th-keys li::before {   /* 短橫線當項目符號 */
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 1px;
+  width: 7px;
+  height: 3px;
+  background: var(--muted);
+}
+.th-fx li.is-match { font-weight: 700; }
+.th-fx li.is-match::before { background: var(--accent); }
+.th-fx .tag { font-weight: 400; }
+.th-fx .th-ph { border-color: transparent; background: var(--ph-mid); color: #0d0f12; font-family: var(--font-race); font-weight: 800; }
+.th-fx .th-ph[data-ph="in"] { background: var(--ph-in); }
+.th-fx .th-ph[data-ph="out"] { background: var(--ph-out); }
+
+.th-do { margin: 0 10px 10px 36px; padding: 6px 10px; border-left: 3px solid var(--plate); border-radius: 2px; background: var(--bg); font-size: 13px; }
+.th-do-title { color: var(--gold); font: 800 12px/1.5 var(--font-race); letter-spacing: 0.04em; }
+.th-do .fold-list { padding: 0 0 0 18px; }
+
+.th-keys { margin-top: 4px; font-size: 14px; }
+.th-sub { padding: 0 12px 2px; color: var(--gold); font-size: 12px; font-weight: 700; }
+.th-steps { margin: 0; padding: 0 12px 10px 32px; font-size: 13px; }
+.th-steps li { padding: 2px 0; }
+.th-pdf { display: inline-block; padding: 8px 6px; color: var(--accent); font-weight: 600; }
+
+.th-table-wrap { margin-top: 12px; overflow-x: auto; }
+.th-table { width: 100%; border-collapse: collapse; background: var(--card); font-size: 13px; }
+.th-table caption { padding-bottom: 5px; color: var(--text); font: 800 15px/1.3 var(--font-race); text-align: left; }
+.th-table th, .th-table td { padding: 5px 6px; border: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.th-table td:last-child { min-width: 84px; white-space: normal; }   /* 最後一欄可以折行，窄螢幕不用橫向捲動 */
+.th-table thead th { border-color: var(--carbon); background: var(--carbon); color: #f2f3f5; font: 700 12px/1.4 var(--font-race); letter-spacing: 0.05em; }
+.th-table tbody th { font-weight: 700; }
+
+/* Rollout 計算：結果放大 */
+.th-calc .row { margin-left: 0; padding-left: 0; border-left: 0; }
+.th-calc .calc { color: var(--accent); font: 800 22px/1.1 var(--font-race); }
+.th-unit { width: 26px; }
+.th-reset { margin-left: 0; }
+
+/* ---------- 示意圖（js/theory-diagram.js 產生的 SVG）專用的類別 ---------- */
+
+.td-shaft { stroke: var(--dg-part); stroke-width: 2.5; }
+.td-hinge { stroke: var(--muted); stroke-width: 3; stroke-linecap: round; }
+.td-arb { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.td-belt { fill: var(--dg-tire); opacity: 0.45; }
+.td-belt2 { stroke: var(--dg-tire); stroke-width: 3.5; opacity: 0.5; }
+.td-cg { fill: var(--card); stroke: var(--text); stroke-width: 1.5; }
+.td-cg-cross { fill: none; stroke: var(--text); stroke-width: 1.5; }
+.td-hub { fill: var(--card); opacity: 0.85; }
+.td-tower { opacity: 0.5; }
+.td-fade { opacity: 0.3; }
+
+.td-guide { stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 5 3; }
+.td-con { stroke: var(--gold); stroke-width: 1.5; stroke-dasharray: 5 3; }
+.td-con-c { stroke: var(--accent); }
+.td-lever { stroke: var(--accent); stroke-width: 4; stroke-linecap: round; }
+.td-rc { fill: var(--accent); stroke: var(--card); stroke-width: 1.5; }
+.td-cgdot { fill: var(--gold); stroke: var(--card); stroke-width: 1.5; }
+.td-ic { fill: var(--gold); stroke: var(--card); stroke-width: 1; }
+.td-halo { paint-order: stroke; stroke: var(--card); stroke-width: 3.5px; stroke-linejoin: round; }
+
+.td-arrow-line { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+.td-arrow-head { fill: var(--accent); }
+.td-arrow.is-muted .td-arrow-line { stroke: var(--muted); }
+.td-arrow.is-muted .td-arrow-head { fill: var(--muted); }
+.td-dimline { stroke: var(--accent); stroke-width: 1.8; }
+.td-pin { stroke: var(--accent); stroke-width: 4.5; stroke-linecap: round; }
+
+.td-on.dg-spring, .td-on.dg-link { stroke: var(--accent); }
+.td-oil { fill: var(--gold); }
+.td-piston { fill: var(--dg-part); stroke: var(--muted); stroke-width: 1.5; }
+.td-piston.td-on { fill: var(--accent); }
+.td-hole { fill: var(--card); }
+.td-hole-shaft { fill: var(--dg-tire); }
+.td-unit { fill: var(--dg-part); stroke: var(--muted); stroke-width: 1; }
+.td-unit.td-on { fill: var(--accent); }
+.td-glyph { fill: var(--card); }
+.td-glyph-bar { stroke: var(--card); stroke-width: 5; stroke-linecap: round; }
+.td-ball { fill: var(--card); stroke: var(--muted); stroke-width: 1.2; }
+.td-mount { stroke: var(--dg-part); stroke-width: 5; stroke-linecap: round; }
+
+/* 總覽頁車圖上被強調的部位（其餘 dg-* 類別的強調樣式在 style.css） */
+.is-hot.td-hinge, .is-hot.td-arb { stroke: var(--accent); stroke-width: 4.5; }
+.is-hot.td-belt { fill: var(--accent); opacity: 1; }
+.is-hot.td-cg { fill: var(--accent); }
