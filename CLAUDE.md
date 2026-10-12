@@ -57,6 +57,7 @@ node --check js/app.js          # 語法檢查，js/、data/ 下每個改過的�
 - `js/diagram.js`：自己畫的 SVG 示意圖（整車俯視、前後軸局部俯視、前後軸正視、側視、避震、齒輪、全車拉桿、零件位置），由產品的 `derive()` 餵參數，跟著欄位數值即時變化
 - `js/visual.js`、`css/visual.css`：掛在 `RC_PLUGINS` 上的外掛，把數值畫成滑桿、刻度條、小圖示、曲線圖（曲線圖釘在編輯頁上方，總覽頁卡片上有縮圖）。資料檔的欄位或群組有對應屬性（`min`／`max`／`step`、`scale`、`glyphs`、`charts`、`locks`）才會出現，屬性格式在 `js/visual.js` 檔頭註解
 - `css/style.css`：整站共用的樣式（兩個頁面都載入），手機優先、MST 官網風格，只有深色；顏色都走 CSS 變數。檔尾的「展示台」「放圖的方塊」兩段是放圖的容器
+- `icons/`：網站的圖示（使用者 2026-10-12 指示設計）。圖案是一台雙門跑車的俯視圖（車頭朝上）：黑底、銀色車殼、深色車窗、紅色雙條紋、黑色尾翼、車底一圈紅色光暈，配色跟著 `css/style.css`，不用 MST 的商標。第一版是用矩形拼的車架示意圖，使用者看了說「很像隨便弄個線條組出來的」，要求車體真實一點，所以改成有弧線的車殼；「不要傾斜的東西」指的是介面上的方塊、色帶與字，車子本身的外形不在此限，但車還是擺正、不要轉成斜的。`icon-large.svg` 是手機主畫面用的完整版，轉成 `apple-touch-icon.png`（180×180、不透明；iOS 會自己切圓角，所以不畫外框）；`icon.svg` 是瀏覽器分頁用的簡化版（座標都取偶數，縮到 16px 才會落在整數像素上），同時轉成 `favicon.ico`（16／32／48 各自從 SVG 轉，不是從大圖縮）。PNG 與 ICO 是轉出來的檔：改圖示時改 SVG，再用無頭 Edge 把 SVG 截成各尺寸的 PNG、用 Pillow 存成 ICO。兩個 HTML 的 `<head>` 各有三行 `<link>` 指到這裡，新增頁面時要一起加
 - `data/<類別>-<產品>.js`：一個子項目一個檔，把產品物件推進 `window.RC_PRODUCTS`
 - `data/chassis-mst-rmx4-gt-upgrades.js`：RMX 4 GT 的改裝件清單。要排在車架資料檔之後載入，它把群組與卡片加到同一個產品物件上
 - `theory.html`、`data/theory-xray.js`、`js/theory.js`、`js/theory-diagram.js`、`css/theory.css`：設定理論頁，和設定記錄頁是兩個獨立的頁面，只共用 `css/style.css`（見「設定理論頁」一節）。`data/theory-xray.js` 不是產品資料，不要加進 `index.html`

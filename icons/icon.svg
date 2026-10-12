@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- 瀏覽器分頁用的小圖示（favicon.ico 也是從這張轉的）。和 icon-large.svg 是同一台車的簡化版：
+       直線的座標都取偶數，縮到 16px 時每一塊剛好落在整數像素上，改的時候維持這一點 -->
+  <defs>
+    <radialGradient id="glow" cx="16" cy="16" r="17" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff1f55" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#e8114b" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#b3002f" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="32" height="32" fill="#000000"/>
+  <rect width="32" height="32" fill="url(#glow)"/>
+  <!-- 輪胎：只有外側露出車殼 -->
+  <g fill="#8f949b">
+    <rect x="6" y="6" width="4" height="6"/>
+    <rect x="22" y="6" width="4" height="6"/>
+    <rect x="6" y="20" width="4" height="6"/>
+    <rect x="22" y="20" width="4" height="6"/>
+  </g>
+  <!-- 車殼與紅色條紋 -->
+  <rect x="8" y="2" width="16" height="28" rx="5" fill="#eceef0"/>
+  <rect x="14" y="2" width="4" height="28" fill="#e8114b"/>
+  <!-- 前擋與後擋玻璃 -->
+  <path d="M10 10.6Q16 8.4 22 10.6L20.6 14H11.4Z" fill="#12151a"/>
+  <path d="M11.4 20H20.6L22 23Q16 24.4 10 23Z" fill="#12151a"/>
+  <!-- 尾翼 -->
+  <rect x="8" y="26" width="16" height="2" fill="#1d1e21"/>
+</svg>
