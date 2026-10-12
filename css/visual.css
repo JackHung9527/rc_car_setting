@@ -1,22 +1,13 @@
 /*
  * js/visual.js 的樣式：滑桿、刻度條、小圖示、曲線圖。
  * 顏色沿用 style.css 的變數：--accent 是目前的值，--gold 是原廠值。
- * 曲線圖（.vz-chart）畫在深色的儀表板裡，底色與裡面用的顏色變數在 style.css 檔尾「儀表板」那一段指定，
- * 第二條線的藍色（--vz-2）也在那裡；這個檔開頭的 --vz-* 是卡片縮圖、滑桿、刻度條用的。
+ * 曲線圖（.vz-chart）的底色與外框在 style.css 檔尾「放圖的方塊」那一段指定。整站只有深色。
  */
 
 :root {
-  --vz-2: #2a78d6;
-  --vz-track: #cdd2d9;
-  --vz-axis: #aab0ba;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --vz-2: #3987e5;
-    --vz-track: #3a3d43;
-    --vz-axis: #50545b;
-  }
+  --vz-2: #4d9bff;
+  --vz-track: #2e3033;
+  --vz-axis: #5a5d62;
 }
 
 /* 欄位下方的附加物：每樣都只占一行 */
@@ -54,7 +45,7 @@
   height: 18px;
   margin-top: -7px;
   border: 2px solid var(--bg);
-  border-radius: 3px;
+  border-radius: 0;
   background: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
@@ -64,7 +55,7 @@
   width: 14px;
   height: 14px;
   border: 2px solid var(--bg);
-  border-radius: 3px;
+  border-radius: 0;
   background: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
@@ -120,8 +111,8 @@
 
 /* 曲線圖 */
 
-.vz-chart { margin: 4px 0; max-width: 460px; padding: 8px 12px; }   /* 底色與邊框在 style.css 的「儀表板」 */
-.vz-chart figcaption { font: 800 13.5px/1.4 var(--font-race); letter-spacing: 0.02em; }
+.vz-chart { margin: 4px 0; max-width: 460px; padding: 8px 12px; }   /* 底色與邊框在 style.css 的「放圖的方塊」 */
+.vz-chart figcaption { color: #ffffff; font: 700 13.5px/1.4 var(--font-race); letter-spacing: 0.06em; }
 .vz-svg { display: block; width: 100%; height: auto; }
 
 .vz-text { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }

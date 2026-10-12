@@ -373,7 +373,7 @@
     }
 
     var q = el("input", {
-      type: "search", class: "th-q", placeholder: "搜尋，例如：翻車、顛簸、反應", "aria-label": "搜尋設定理論",
+      type: "search", class: "th-q", placeholder: "搜尋：翻車、顛簸…", "aria-label": "搜尋設定理論",
       value: view.q, autocomplete: "off",
       oninput: function () { view.q = q.value; refresh(); }
     });

@@ -1,30 +1,23 @@
 /*
- * 設定理論頁（theory.html）專用的樣式。整站共用的競技風格（顏色變數、頁首、斜切的按鈕、小標題、
- * 賽道與儀表板）在 css/style.css，這裡只放這一頁才有的東西。
+ * 設定理論頁（theory.html）專用的樣式。整站共用的外觀（顏色變數、頁首、按鈕與卡片的外框、小標題、
+ * 展示台與放圖的方塊）在 css/style.css，這裡只放這一頁才有的東西。
  */
 
 :root {
-  --zone-front: #1f7ae0;     /* 項目鈕的色條：前軸、車身與全車、後軸 */
-  --zone-mid: #7b838e;
-  --zone-rear: #e8590c;
-  --ph-in: #5aa9ff;          /* 入彎、彎中、出彎三個階段的顏色 */
-  --ph-mid: #ffc400;
-  --ph-out: #3ddc84;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --zone-front: #3d94ff;
-    --zone-mid: #8a919b;
-    --zone-rear: #ff7a1a;
-  }
+  --zone-front: #e6e7e9;     /* 項目鈕的色條：前軸是銀白、車身與全車是灰、後軸是金 */
+  --zone-mid: #6f7277;
+  --zone-rear: #d9b45a;
+  --ph-in: #7fb6ff;          /* 入彎、彎中、出彎三個階段的顏色 */
+  --ph-mid: #e3c26b;
+  --ph-out: #5fd39a;
 }
 
 /* ---------- 頁首：這一頁沒有分類頁籤，改顯示標題與一行英文小字 ---------- */
 
 .th-top h1 { display: block; font-size: 21px; }   /* 窄螢幕也顯示標題 */
-.th-kicker { color: rgba(255, 255, 255, 0.55); font: 700 11px/1 var(--font-race); letter-spacing: 0.2em; white-space: nowrap; }
-.th-home { flex: none; padding: 14px 8px 14px 0; color: #ff5a4f; font: 700 13px/1 var(--font-race); text-decoration: none; }
+.th-top h1 { letter-spacing: 0.12em; text-shadow: 0 0 8px rgba(255, 255, 255, 0.3); }
+.th-kicker { color: #8c8c8c; font: 700 11px/1 var(--font-race); letter-spacing: 0.22em; white-space: nowrap; }
+/* 回設定記錄的連結用 style.css 的 .top-link（金屬質感的小按鈕） */
 
 /* ---------- 搜尋與症狀查詢 ---------- */
 
@@ -34,8 +27,8 @@
   min-width: 0;
   min-height: 40px;
   padding: 6px 10px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border: 1px solid var(--frame);
+  border-radius: 0;
   background: var(--field);
   font-size: 16px;   /* 16px 以上，iOS 才不會聚焦時自動放大 */
   -webkit-appearance: none;   /* iOS 的搜尋框預設是圓角膠囊，改成和其他輸入框一樣 */
@@ -43,41 +36,37 @@
 }
 .th-goalbtn { flex: none; }
 .th-goalbtn::after { content: " ▾"; color: var(--muted); }
-.th-goalbtn[aria-expanded="true"] { border-color: var(--accent); color: var(--accent); }
+.th-goalbtn[aria-expanded="true"] { border-color: var(--accent); color: #ffffff; box-shadow: 0 0 8px var(--glow); }
 .th-goalbtn[aria-expanded="true"]::after { content: " ▴"; color: inherit; }
 
 .th-panel {
   margin-bottom: 6px;
   padding: 6px 12px 8px;
-  border: 1px solid var(--line);
-  border-top: 3px solid var(--accent);
-  border-radius: 3px;
+  border: 1px solid var(--frame);
   background: var(--card);
 }
 .th-goalrow { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 8px; padding: 4px 0; }
 .th-goalrow-name { flex: 1 1 100%; color: var(--muted); font: 700 12px/1.4 var(--font-race); letter-spacing: 0.03em; }
 
-.th-goal { min-height: 40px; padding: 0 13px; background: var(--bg); font-size: 13px; font-weight: 700; }
-.th-goal.is-on { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
+.th-goal { min-height: 40px; padding: 0 13px; color: #c4c4c4; font-size: 13px; font-weight: 700; }
+.th-goal.is-on { border-color: #ff5c86; background: var(--red); color: #ffffff; box-shadow: 0 0 8px var(--glow); }
 
-/* 查詢中的橫幅：黃底黑字，像賽道上的旗號訊息 */
+/* 查詢中的橫幅：金色細框，標題是金字 */
 .th-now {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-bottom: 6px;
-  padding: 5px 10px 5px 12px;
-  border-radius: 3px;
-  background: var(--plate);
-  color: var(--plate-text);
+  padding: 5px 8px 5px 12px;
+  border: 1px solid var(--gold);
+  background: linear-gradient(#1d1809, #0a0804);
+  color: #d8d8d8;
   font-size: 13px;
-  font-weight: 600;
 }
 .th-now-text { flex: 1; min-width: 0; }
-.th-now b { font: 800 14px/1.3 var(--font-race); }
-.th-now .btn-small { border-color: #0d0f12; background: #0d0f12; color: #ffffff; }
+.th-now b { color: var(--gold); font: 700 14px/1.3 var(--font-race); letter-spacing: 0.03em; }
 
-/* ---------- 總覽：項目圍著賽道上的車 ---------- */
+/* ---------- 總覽：項目圍著展示台上的車 ---------- */
 
 .th-stage { gap: 4px; }
 .th-stage .stage-mid { grid-template-columns: minmax(0, 1fr) 40% minmax(0, 1fr); gap: 4px; }
@@ -92,7 +81,7 @@
   min-width: 0;
   min-height: 36px;
   padding: 2px 5px 2px 7px;
-  border-left: 4px solid var(--zone-mid);
+  border-left: 3px solid var(--zone-mid);
   color: var(--text);
   font-size: 13px;
   font-weight: 700;
@@ -103,26 +92,26 @@
 .th-chip[data-zone="rear"] { border-left-color: var(--zone-rear); }
 .th-chip-name { flex: 1 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .th-chip-dir { display: flex; flex: none; flex-direction: column; gap: 1px; }
-.th-chip-tag {   /* 方向標籤：黃底黑字的號碼牌 */
+.th-chip-tag {   /* 方向標籤：金色漸層配黑字，像官網圖上的金色小牌 */
   padding: 0 4px;
   border-radius: 2px;
-  background: var(--plate);
+  background: linear-gradient(#f0d995, #c9a245 55%, #a8842f);
   color: var(--plate-text);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 18px;
   text-align: center;
   white-space: nowrap;
 }
 .th-chip-dir.is-two .th-chip-tag { font-size: 10px; line-height: 14px; }   /* 兩個方向上下疊 */
-.th-chip-dir.is-weak .th-chip-tag { background: none; box-shadow: inset 0 0 0 1.5px var(--plate-line); color: var(--text); }
+.th-chip-dir.is-weak .th-chip-tag { background: none; box-shadow: inset 0 0 0 1px var(--plate-line); color: var(--gold); }
 .th-chip.is-hit {
   border-top-color: var(--accent);
   border-right-color: var(--accent);
   border-bottom-color: var(--accent);
-  box-shadow: 0 0 10px var(--glow);
+  box-shadow: 0 0 9px var(--glow);
 }
-.th-chip.is-dim { opacity: 0.42; }
+.th-chip.is-dim { opacity: 0.4; }
 .th-chip:hover { border-top-color: var(--muted); border-right-color: var(--muted); border-bottom-color: var(--muted); }
 
 /* 窄螢幕：車圖縮小一點、項目鈕的留白收一點，五個字的名稱加上方向標籤才放得下 */
@@ -151,16 +140,17 @@
   width: 100%;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-left: 5px solid var(--zone-mid);
-  border-radius: 3px;
-  background: var(--card);
+  border-left: 3px solid var(--zone-mid);
+  background: var(--panel);
+  color: #d8d8d8;
   text-align: left;
 }
+.th-res:active { border-color: var(--silver); box-shadow: 0 0 10px #cecece; }
 .th-res[data-zone="front"] { border-left-color: var(--zone-front); }
 .th-res[data-zone="rear"] { border-left-color: var(--zone-rear); }
 .th-res-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
-.th-res-opt { flex: 1 1 auto; color: var(--accent); font: 800 16px/1.3 var(--font-race); }
-.th-res-opt::after { content: " ››"; font-weight: 400; }
+.th-res-opt { flex: 1 1 auto; color: #ffffff; font: 700 16px/1.3 var(--font-race); letter-spacing: 0.02em; }
+.th-res-opt::after { content: " ››"; color: var(--accent); font-weight: 700; }
 .th-res-where { flex: none; color: var(--muted); font: 600 12px/1.3 var(--font-race); letter-spacing: 0.03em; }
 .th-res-fx { display: block; margin-top: 3px; font-size: 14px; }
 
@@ -173,8 +163,8 @@
 .th-body .th-now { margin-top: 8px; margin-bottom: 0; }
 .th-intro { margin-top: 10px; font-size: 14px; }
 
-.th-opt { margin-top: 8px; border: 1px solid var(--line); border-left: 5px solid var(--line); border-radius: 3px; background: var(--card); }
-.th-opt.is-on { border-color: var(--accent); box-shadow: 0 0 12px var(--glow); }
+.th-opt { margin-top: 8px; border: 1px solid var(--line); background: var(--card); color: #d8d8d8; }
+.th-opt.is-on { border-color: var(--accent); box-shadow: 0 0 10px var(--glow); }
 .th-opt-head {
   display: flex;
   align-items: center;
@@ -184,14 +174,16 @@
   padding: 6px 10px;
   border: 0;
   background: none;
-  font: 800 16px/1.3 var(--font-race);
+  color: #c4c4c4;
+  font: 700 16px/1.3 var(--font-race);
+  letter-spacing: 0.02em;
   text-align: left;
 }
 /* 選取記號：一次只能選一個方向，所以用圓點 */
 .th-radio { flex: none; width: 14px; height: 14px; border: 2px solid var(--muted); border-radius: 50%; }
 .th-opt.is-on .th-radio { border-color: var(--accent); background: var(--accent); box-shadow: inset 0 0 0 2px var(--card); }
-.th-opt.is-on .th-opt-head { color: var(--accent); }
-.th-opt-sub { display: block; color: var(--muted); font: 400 12px/1.4 system-ui, -apple-system, "Segoe UI", "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif; }
+.th-opt.is-on .th-opt-head { color: #ffffff; text-shadow: 0 0 8px rgba(255, 70, 110, 0.9); }   /* 選到的：白字加紅色光暈 */
+.th-opt-sub { display: block; color: var(--muted); font: 400 12px/1.4 var(--font-race); letter-spacing: 0; text-shadow: none; }
 .th-use { padding: 0 10px 6px 36px; color: var(--muted); font-size: 13px; }
 .th-opt.is-plain .th-fx { padding-left: 12px; }
 
@@ -209,31 +201,31 @@
 .th-fx li.is-match { font-weight: 700; }
 .th-fx li.is-match::before { background: var(--accent); }
 .th-fx .tag { font-weight: 400; }
-.th-fx .th-ph { border-color: transparent; background: var(--ph-mid); color: #0d0f12; font-family: var(--font-race); font-weight: 800; }
-.th-fx .th-ph[data-ph="in"] { background: var(--ph-in); }
-.th-fx .th-ph[data-ph="out"] { background: var(--ph-out); }
+.th-fx .th-ph { color: var(--ph-mid); font-weight: 700; }   /* 階段標籤：細框加有顏色的字 */
+.th-fx .th-ph[data-ph="in"] { color: var(--ph-in); }
+.th-fx .th-ph[data-ph="out"] { color: var(--ph-out); }
 
-.th-do { margin: 0 10px 10px 36px; padding: 6px 10px; border-left: 3px solid var(--plate); border-radius: 2px; background: var(--bg); font-size: 13px; }
-.th-do-title { color: var(--gold); font: 800 12px/1.5 var(--font-race); letter-spacing: 0.04em; }
+.th-do { margin: 0 10px 10px 36px; padding: 6px 10px; border-left: 2px solid var(--gold); background: #000000; font-size: 13px; }
+.th-do-title { color: var(--gold); font: 700 12px/1.5 var(--font-race); letter-spacing: 0.06em; }
 .th-do .fold-list { padding: 0 0 0 18px; }
 
 .th-keys { margin-top: 4px; font-size: 14px; }
 .th-sub { padding: 0 12px 2px; color: var(--gold); font-size: 12px; font-weight: 700; }
 .th-steps { margin: 0; padding: 0 12px 10px 32px; font-size: 13px; }
 .th-steps li { padding: 2px 0; }
-.th-pdf { display: inline-block; padding: 8px 6px; color: var(--accent); font-weight: 600; }
+.th-pdf { display: inline-block; padding: 8px 6px; color: var(--text); font-weight: 700; }
 
 .th-table-wrap { margin-top: 12px; overflow-x: auto; }
 .th-table { width: 100%; border-collapse: collapse; background: var(--card); font-size: 13px; }
-.th-table caption { padding-bottom: 5px; color: var(--text); font: 800 15px/1.3 var(--font-race); text-align: left; }
+.th-table caption { padding-bottom: 5px; color: #ffffff; font: 700 15px/1.3 var(--font-race); letter-spacing: 0.08em; text-align: left; }
 .th-table th, .th-table td { padding: 5px 6px; border: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .th-table td:last-child { min-width: 84px; white-space: normal; }   /* 最後一欄可以折行，窄螢幕不用橫向捲動 */
-.th-table thead th { border-color: var(--carbon); background: var(--carbon); color: #f2f3f5; font: 700 12px/1.4 var(--font-race); letter-spacing: 0.05em; }
+.th-table thead th { border-color: var(--frame); background: var(--metal); color: #e2e2e2; font: 700 12px/1.4 var(--font-race); letter-spacing: 0.05em; }
 .th-table tbody th { font-weight: 700; }
 
 /* Rollout 計算：結果放大 */
 .th-calc .row { margin-left: 0; padding-left: 0; border-left: 0; }
-.th-calc .calc { color: var(--accent); font: 800 22px/1.1 var(--font-race); }
+.th-calc .calc { color: #ffffff; font: 700 22px/1.1 var(--font-race); text-shadow: 0 0 8px rgba(255, 70, 110, 0.9); }
 .th-unit { width: 26px; }
 .th-reset { margin-left: 0; }
 
