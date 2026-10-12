@@ -1,0 +1,8 @@
+# 作業系統產生的檔案
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 相依套件與建置產物（之後若用到打包工具）
+node_modules/
+dist/
