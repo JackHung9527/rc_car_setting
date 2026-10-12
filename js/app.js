@@ -16,14 +16,30 @@
  *                                 沒提供就一個群組一張。items 可以列出別的群組的欄位，同一個欄位能出現在
  *                                 不只一張卡片；沒有 slot 的卡片排在車圖下方
  *        p.derive(values)         把欄位值換成 js/diagram.js 的參數
+ *        p.sheets                 原廠圖的來源：{ 名稱: { src: 圖檔網址, w, h: 原圖的像素大小, credit: 出處 } }，
+ *                                 第一個是預設的那張。圖直接連到原廠網站，不放進 repo
  *   欄位 type                     num、text、select
  *        preset                   說明書沒寫原廠值、但頁面想給一個起始值時用。畫面標成「預設」而不是「原廠」
  *        showIf: function (values)  回傳 false 時這一列不顯示（例如「自訂電壓」只在選了自訂時出現）
  *        step／min／max           num 欄位的加減按鈕每次走多少、上下限
  *        prefix／signed／digits   顯示在數值前的固定文字／正數顯示加號／固定小數位數
  *        calc: function (values)  唯讀的計算欄位
- *        viz                      調整這個欄位時，釘在上方的示意圖切到哪一種
- *        part                     調整這個欄位時，示意圖要強調的零件名稱（交給 diagram.js 的 opt.active）
+ *        viz                      調整這個欄位時，釘在上方的示意圖切到哪一種；"sheet" 是原廠圖（要有 fig）
+ *        fig                      這個欄位在原廠圖上的位置，座標是原圖的像素：
+ *                                 { on: p.sheets 的名稱（省略就是第一張）,
+ *                                   box: [x0, y0, x1, y1] 要顯示的範圍，也可以是 function (values)，
+ *                                   at: [x, y, 對齊] 數值寫在哪裡；對齊是 "l"（從這一點往右寫）、"r"（寫到這一點為止），
+ *                                       省略就是置中。也可以是 function (values)，回傳 null 就不寫,
+ *                                   opts: { 選項: [x, y, 標籤, 標籤放哪一側 t／b／l／r] } 每個選項圈在哪裡，
+ *                                         同一個選項有好幾處時給陣列的陣列,
+ *                                   turn: { box: [x0, y0, x1, y1], drawn: 選項 } 圖上這一塊畫的是 drawn 那個選項的樣子，
+ *                                         選了別的選項就把這一塊轉 180°（零件翻面安裝時用）,
+ *                                   hide: [[x0, y0, x1, y1], ...] 要塗黑的地方（會和翻轉後的零件重疊的記號）,
+ *                                   paint: function (values) 回傳 [[x0, y0, x1, y1], ...]，在圖上塗紅色的圓角色塊
+ *                                         （例如長孔裡軸套的位置）；落在 turn 那一塊裡的會跟著一起轉,
+ *                                   say: function (values) 回傳一句話，接在圖說的欄位名稱後面 }
+ *                                 卡片裡有欄位寫了 fig，釘圖區就多一個「原廠圖」分頁；同一塊圖裡其他欄位的值也會寫上去
+ *        part                     調整這個欄位時交給 diagram.js 的 opt.active：要強調哪個零件，或是同一種圖要畫哪一個版本
  *        hot                      點這個欄位時，示意圖要強調的部位（取代卡片的 hot）；零件清單用
  *        sub／img／link           名稱下方的小字（例如料號）／名稱左邊的小圖網址／說明裡的外部連結
  *        rerender: true           這個欄位改變後整頁重畫（其他欄位的原廠值跟著換的時候用）
@@ -48,8 +64,10 @@
   var CSV_HEADER = ["product_id", "product", "group", "item_id", "item", "value", "unit", "factory"];
   var PIN_NAMES = {
     map: "全車", "top-front": "俯視", "top-rear": "俯視", front: "正視", rear: "正視",
-    side: "側視", "damper-f": "避震", "damper-r": "避震", gear: "齒輪", links: "全車", car: "位置"
+    side: "側視", "damper-f": "避震", "damper-r": "避震", gear: "齒輪", links: "全車", car: "位置",
+    rod: "拉桿", holes: "孔位", sheet: "原廠圖"
   };
+  var FIG_HEIGHT = 148;   // 原廠圖釘在上方時的高度上限（px），加上圖說和示意圖差不多高
 
   var products = window.RC_PRODUCTS || [];
   var plugins = window.RC_PLUGINS || [];
@@ -535,20 +553,145 @@
     return row;
   }
 
+  /* ---------- 原廠圖 ---------- */
+
+  function figSheet(p, fig) {
+    return p.sheets[fig.on || Object.keys(p.sheets)[0]];
+  }
+
+  function figBox(fig, values) {
+    return typeof fig.box === "function" ? fig.box(values) : fig.box;
+  }
+
+  function inBox(at, box) {
+    return !!at && at[0] >= box[0] && at[0] <= box[2] && at[1] >= box[1] && at[1] <= box[3];
+  }
+
+  // 原廠圖的一塊（反白成黑底白線），上面疊目前的設定：數值寫在圖上留空的位置，選項圈在圖上對應的地方。
+  // 同一塊圖裡其他欄位的值也一起寫上去（顏色較淡），看起來就像填好的設定表
+  function makeFigure(p, sheet, box) {
+    var bw = box[2] - box[0], bh = box[3] - box[1];
+    var under = el("div", { class: "fig-layer" });   // 塗黑與會翻轉的區塊：裡面有圖片，做一次就不再重做
+    var layer = el("div", { class: "fig-layer" });   // 目前設定的記號：每次都重畫
+    var missing = el("p", { class: "fig-missing", hidden: "", text: "原廠的圖載不到（需要網路）" });
+    var turns = [], hides = [];
+
+    // 把原圖放進只看得到 r 這一塊的容器裡；容器的長寬比要和 r 一樣
+    function picture(r, onerror) {
+      var w = r[2] - r[0], h = r[3] - r[1];
+      return el("img", {
+        class: "fig-img", src: sheet.src, alt: "", referrerpolicy: "no-referrer", draggable: "false", onerror: onerror,
+        style: "width:" + (sheet.w / w * 100) + "%;left:" + (-r[0] / w * 100) + "%;top:" + (-r[1] / h * 100) + "%"
+      });
+    }
+    // r 在 base 這一塊裡佔的位置
+    function within(r, base) {
+      var w = base[2] - base[0], h = base[3] - base[1];
+      return "left:" + ((r[0] - base[0]) / w * 100) + "%;top:" + ((r[1] - base[1]) / h * 100) + "%;width:" +
+        ((r[2] - r[0]) / w * 100) + "%;height:" + ((r[3] - r[1]) / h * 100) + "%";
+    }
+    function overlap(a, b) { return a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1]; }
+
+    var crop = el("div", {
+      class: "fig-crop",
+      style: "aspect-ratio:" + bw + "/" + bh + ";width:min(100%," + Math.round(FIG_HEIGHT * bw / bh) + "px)"
+    }, [picture(box, function () { crop.hidden = true; missing.hidden = false; }), under, layer]);
+    var caption = el("figcaption", { class: "fig-cap" });
+
+    eachItem(p, function (it) {
+      if (it.fig && figSheet(p, it.fig) === sheet) hides = hides.concat(it.fig.hide || []);
+    });
+    hides.forEach(function (r) {
+      if (overlap(r, box)) under.appendChild(el("div", { class: "fig-hide", style: within(r, box) }));
+    });
+    eachItem(p, function (it) {
+      var t = it.fig && figSheet(p, it.fig) === sheet && it.fig.turn;
+      if (!t || !overlap(t.box, box)) return;
+      var node = el("div", { class: "fig-turn", style: within(t.box, box) }, [picture(t.box)].concat(
+        hides.filter(function (r) { return overlap(r, t.box); }).map(function (r) {
+          return el("div", { class: "fig-hide", style: within(r, t.box) });
+        })));
+      var paint = el("div", { class: "fig-layer" });
+      node.appendChild(paint);
+      under.appendChild(node);
+      turns.push({ item: it, drawn: t.drawn, box: t.box, node: node, paint: paint });
+    });
+
+    function place(cls, at, text, side) {
+      layer.appendChild(el("span", {
+        class: cls, "data-label": text || null, "data-side": side || null, text: cls.indexOf("fig-val") === 0 ? text : null,
+        style: "left:" + ((at[0] - box[0]) / bw * 100) + "%;top:" + ((at[1] - box[1]) / bh * 100) + "%"
+      }));
+    }
+
+    function sync(active) {
+      var st = state(p);
+      turns.forEach(function (t) {
+        var value = st.eff[t.item.id];
+        t.node.classList.toggle("is-turned", value !== "" && value !== t.drawn);
+        t.paint.textContent = "";
+      });
+      layer.textContent = "";
+      eachItem(p, function (it) {
+        var f = it.fig;
+        if (!f || figSheet(p, f) !== sheet || (it.showIf && !it.showIf(st.eff))) return;
+        (f.paint ? f.paint(st.eff) : []).forEach(function (r) {
+          if (!overlap(r, box)) return;
+          // 色塊畫在會翻轉的那一塊上時，放進那一塊裡面，零件轉的時候才會跟著轉
+          var host = turns.filter(function (t) { return overlap(r, t.box); })[0];
+          (host ? host.paint : layer).appendChild(el("span", { class: "fig-paint", style: within(r, host ? host.box : box) }));
+        });
+        var on = it === active, value = st.eff[it.id];
+        Object.keys(f.opts || {}).forEach(function (opt) {
+          var picked = opt === value, factory = opt === st.fac[it.id];
+          if (!on && !picked) return;   // 別的欄位只標出選中的那一個
+          var spots = f.opts[opt];
+          (Array.isArray(spots[0]) ? spots : [spots]).forEach(function (spot) {
+            if (!inBox(spot, box)) return;
+            place("fig-opt" + (on ? " is-on" : "") + (picked ? " is-picked" : factory ? " is-factory" : ""), spot, spot[2], spot[3]);
+          });
+        });
+        var at = typeof f.at === "function" ? f.at(st.eff) : f.at;
+        if (value !== "" && inBox(at, box)) place("fig-val" + (on ? " is-on" : ""), at, display(it, value), at[2]);
+      });
+      var say = active.fig.say ? active.fig.say(st.eff) : "";
+      caption.textContent = active.name + (say ? "：" + say : "") + "｜" + sheet.credit;
+    }
+
+    return { node: el("figure", { class: "fig" }, [crop, missing, caption]), sync: sync };
+  }
+
   /* ---------- 編輯頁 ---------- */
 
   function renderEditor(p, card) {
-    var kinds = Diagram && p.derive && card.diagram ? card.diagram : [];
+    var drawn = Diagram && p.derive && card.diagram ? card.diagram : [];
+    var figItems = p.sheets ? itemsOf(p, card).filter(function (it) { return it.fig; }) : [];
+    var kinds = drawn.concat(figItems.length ? ["sheet"] : []);
     var pin = { kind: kinds.indexOf(view.pin) >= 0 ? view.pin : kinds[0] };
     var pinBox = el("div", { class: "pin" });
+    var figures = {};   // 做好的原廠圖。同一塊圖重畫時只換上面的記號，圖片不必重新載入
+
+    function drawFigure(st) {
+      // 目前的欄位在原廠圖上沒有位置時（例如直接按「原廠圖」分頁），顯示上一個看過的，或這張卡片的第一個
+      var it = pin.item && pin.item.fig ? pin.item : (pin.figItem || figItems[0]);
+      var sheet = figSheet(p, it.fig), box = figBox(it.fig, st.eff);
+      var key = sheet.src + "|" + box.join(",");
+      var figure = figures[key] || (figures[key] = makeFigure(p, sheet, box));
+      pin.figItem = it;
+      figure.sync(it);
+      return figure.node;
+    }
 
     function drawPin() {
-      pinBox.textContent = "";
       if (!pin.kind) return;
       var st = state(p);
       var at = pin.item || {};
-      pinBox.appendChild(Diagram.draw(pin.kind, p.derive(st.eff), p.derive(st.fac),
-        { hot: at.hot || card.hot, active: at.part, caption: at.hot ? at.name : "" }));
+      var node = pin.kind === "sheet" ? drawFigure(st) : Diagram.draw(pin.kind, p.derive(st.eff), p.derive(st.fac),
+        { hot: at.hot || card.hot, active: at.part, caption: at.hot ? at.name : "" });
+      // 還是同一張原廠圖：上面的記號已經換好，不要拆掉重放，翻轉的動畫才不會被打斷
+      if (node === pinBox.firstChild) return;
+      pinBox.textContent = "";
+      pinBox.appendChild(node);
       if (kinds.length < 2) return;
       pinBox.appendChild(el("div", { class: "pin-tabs" }, kinds.map(function (kind) {
         return el("button", {
@@ -561,10 +704,16 @@
       focus: function (kind) {
         if (kinds.indexOf(kind) < 0 || kind === pin.kind) return;
         pin.kind = view.pin = kind;
+        pin.kept = kind === "sheet";   // 使用者自己切到原廠圖
         drawPin();
       },
       touch: function (it) {
         var kind = kinds.indexOf(it.viz) >= 0 ? it.viz : pin.kind;
+        // 使用者自己切到原廠圖之後，調有原廠圖的欄位就留在原廠圖，不要又跳回示意圖
+        if (pin.kept && it.fig) kind = "sheet";
+        // 正在看原廠圖，但這個欄位在圖上沒有位置：回到這張卡片的第一種示意圖
+        if (kind === "sheet" && !it.fig && kinds[0] !== "sheet") kind = kinds[0];
+        if (kind !== "sheet") pin.kept = false;
         if (kind === pin.kind && it === pin.item) return;
         pin.kind = view.pin = kind;
         pin.item = it;
@@ -600,7 +749,8 @@
         pinBox
       ].concat(pluginNodes("pin", p, card))),
       el("div", { class: "rows" }, body),
-      el("p", { class: "hint", text: "點欄位名稱看說明與調整後特性。" + (kinds.length ? "虛線是原廠值。" : "") }),
+      el("p", { class: "hint", text: "點欄位名稱看說明與調整後特性。" + (drawn.length ? "虛線是原廠值。" : "") +
+        (figItems.length ? "「原廠圖」是官方的圖，紅色是目前的設定。" : "") }),
       el("button", { type: "button", class: "btn back-bottom", text: "‹ 回總覽", onclick: closeCard })
     ]);
   }

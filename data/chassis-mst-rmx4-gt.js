@@ -40,6 +40,9 @@
     g("只墊 R（後高前低）", "Anti-dive：煞車與收油時點頭少、轉向反應較銳利，過顛簸較硬")
   ];
   var NOTE_DIR = "△／▽ 是設定表上的安裝方向記號。哪個方向插銷較高，說明書沒有文字說明，請對照實物。";
+  // 擺臂座的刻度由兩端長孔裡的軸套決定。四種放法出自 MST 官網可調擺臂座（料號 820143）產品頁的 Suspension mount adjustment modes 圖
+  var NOTE_FBUSH = "刻度由擺臂座兩端長孔裡的軸套決定，一支擺臂座只有四種放法：+3.5 軸套 A（圓孔）朝內、+4.0 軸套 B（長孔）朝內、+4.5 軸套 B 朝外、+5.0 軸套 A 朝外（MST 官網料號 820143 產品頁的對照圖）。說明書 p.5 的零件表，前擺臂座只列了軸套 B 4 個";
+  var NOTE_RBUSH = "刻度由擺臂座兩端長孔裡的軸套決定，一支擺臂座只有四種放法：+11.5 軸套 A（圓孔）朝內、+12.0 軸套 B（長孔）朝內、+12.5 軸套 B 朝外、+13.0 軸套 A 朝外。後擺臂座官方沒有對照圖，這是比照前擺臂座的規則；說明書 p.17 畫的原廠裝法（F +12.0 是軸套 B 朝內、R +13.0 是軸套 A 朝外）符合。p.17 的零件表列了軸套 A、B 各 2 個";
 
   var FX_RSM_POS = [
     g("R 刻度減 F 刻度的差越大", "後束（Toe-in）越大，特性見「後束」；原廠 +13.0 與 +12.0 對應 Toe-in 1°"),
@@ -124,7 +127,7 @@
           effect: [g("改變長度", "避震總長跟著改變，影響下垂量與車高，四支要一致")]
         },
         {
-          id: pre + "_rebound", name: "封蓋時軸心下拉量", en: "Rebound", type: "num", step: 0.5, min: 0, unit: "mm", factory: "4",
+          id: pre + "_rebound", part: "rebound", name: "封蓋時軸心下拉量", en: "Rebound", type: "num", step: 0.5, min: 0, unit: "mm", factory: "4",
           fnote: "說明書 p.24 步驟 7：軸心下拉 4 mm 後蓋上避震上蓋，擦掉溢出的油",
           effect: [
             g("下拉越多（回彈越大）", "避震伸展快、反應快，車身較彈"),
@@ -156,7 +159,7 @@
     ],
     // 總覽頁的卡片：slot 是卡片在車圖周圍的位置（t 上排、l 左欄、r 右欄、b 下排），由車頭排到車尾
     cards: [
-      { id: "steering", slot: "t1", name: "轉向", groups: ["steering"], hot: ["steering"], diagram: ["top-front"],
+      { id: "steering", slot: "t1", name: "轉向", groups: ["steering"], hot: ["steering"], diagram: ["top-front", "rod", "holes"],
         summary: [["拉桿", "tie_rod_len"]] },
       { id: "wheels", slot: "t2", name: "輪胎與輪框", groups: ["wheels"], hot: ["front-wheel", "rear-wheel"], diagram: ["top-front", "top-rear"],
         summary: [["前", "f_tire"]] },
@@ -198,7 +201,8 @@
         return {
           oil: v[pre + "_oil"], len: n(pre + "_spring_len"), wire: n(pre + "_spring_wire"), color: v[pre + "_spring_color"],
           pistonDia: v[pre + "_piston_dia"], pistonHoles: v[pre + "_piston_holes"],
-          retainer: n(pre + "_retainer"), upper: n(pre + "_upper_end"), lower: v[pre + "_lower_end"]
+          retainer: n(pre + "_retainer"), upper: n(pre + "_upper_end"), lower: v[pre + "_lower_end"],
+          rod: n(pre + "_rod_len"), rebound: n(pre + "_rebound")
         };
       }
       var mode = /MODE (\d)/.exec(v.motor_mode || "");
@@ -218,6 +222,8 @@
         batteryThin: v.battery_type ? v.battery_type.indexOf("薄") === 0 : null,
         escHigh: v.esc_pos ? v.esc_pos.indexOf("後") === 0 : null,
         fd: shock("fd"), rd: shock("rd"),
+        armB: (function () { var m = /孔 (\d)/.exec(v.steer_armB_hole || ""); return m ? Number(m[1]) : null; })(),
+        hornHole: n("servo_horn_hole"),
         links: {
           tie: n("tie_rod_len"), servo: n("servo_link_len"), fUpper: n("f_upper_arm_gap"), fLower: n("f_lower_arm_len"),
           rUpper: n("r_upper_link_gap"), rLower: n("r_lower_arm_len")
@@ -284,20 +290,21 @@
             note: "墊片加厚是增加還是減少阿克曼，說明書沒有寫。改完把方向打到底，看內外輪的角度差確認。"
           },
           {
-            id: "tie_rod_len", part: "tie", name: "轉向拉桿長度", en: "Steering adjuster", type: "num", step: 0.1, min: 0, unit: "mm", factory: "15.6",
+            id: "tie_rod_len", viz: "rod", part: "tie", name: "轉向拉桿長度", en: "Steering adjuster", type: "num", step: 0.1, min: 0, unit: "mm", factory: "15.6",
             fnote: "說明書 p.7 原值 15.8 mm；變更說明：內附塑膠 ATK V3 輪座用 15.6 mm，鋁合金 ATK V3 輪座用 15.5 mm。左右相同，用卡尺量",
             effect: [g("調整長度", "決定前束角度，特性見「前束（Toe-out）」；左右長度不同會讓中立點偏移、左右轉角不對稱")]
           },
           {
-            id: "steer_armB_hole", name: "轉向搖臂 B 球頭孔位", en: "Steering arm B", type: "text", factory: "紅點孔位",
-            fnote: "說明書 p.7 步驟 1 圖中紅點標示的孔位，是伺服拉桿的接點",
+            id: "steer_armB_hole", viz: "holes", part: "armB", name: "轉向搖臂 B 球頭孔位", en: "Steering arm B", type: "select",
+            options: ["孔 1", "孔 2", "孔 3", "孔 4"], factory: "孔 3",
+            fnote: "搖臂 B 的長孔有 4 個位置，這裡由轉軸往外編成孔 1～孔 4（編號是這個網頁取的，說明書沒有替孔命名）。說明書 p.7 步驟 1 的紅點標在孔 3，是伺服拉桿的接點",
             effect: [
               g("球頭離搖臂轉軸越遠", "同樣的伺服行程下轉向變慢、變細膩，伺服負擔輕；最大轉角可能減少"),
               g("球頭離搖臂轉軸越近", "轉向變快、轉角變大；伺服負擔重、手感較敏感")
             ]
           },
           {
-            id: "servo_horn_hole", name: "伺服擺臂孔位", en: "Long servo horn", type: "select", options: ["21.5", "17.5"], unit: "mm", factory: "21.5",
+            id: "servo_horn_hole", viz: "holes", part: "horn", name: "伺服擺臂孔位", en: "Long servo horn", type: "select", options: ["21.5", "17.5"], unit: "mm", factory: "21.5",
             fnote: "說明書 p.19 圖示球頭鎖在外側孔；擺臂與伺服機身夾角要 ≤90°",
             effect: [
               g("21.5（外孔）", "轉向快、行程大，需要較大的伺服扭力"),
@@ -305,7 +312,7 @@
             ]
           },
           {
-            id: "servo_link_len", part: "servo", name: "伺服拉桿長度", en: "Servo saver turnbuckle M3×68", type: "num", step: 0.5, min: 0, unit: "mm",
+            id: "servo_link_len", viz: "rod", part: "servo", name: "伺服拉桿長度", en: "Servo saver turnbuckle M3×68", type: "num", step: 0.5, min: 0, unit: "mm",
             fnote: "說明書 p.20 沒有給數值",
             effect: [m("調整長度", "依伺服機規格調整長度，並對正轉向中立點；這不是操控調整項，長度不對會左右轉角不對稱")]
           },
@@ -450,10 +457,10 @@
         name: "前下擺臂座（Rollcenter）",
         src: "設定表 p.30／說明書 p.5",
         items: [
-          { id: "fsm_f_pos", viz: "top-front", name: "前座（F）刻度", en: "Suspension mount F", type: "num", signed: true, digits: 1, step: 0.5, min: 3.5, max: 5, factory: "4.0", effect: FX_FSM_POS },
+          { id: "fsm_f_pos", viz: "top-front", name: "前座（F）刻度", en: "Suspension mount F", type: "num", signed: true, digits: 1, step: 0.5, min: 3.5, max: 5, factory: "4.0", fnote: NOTE_FBUSH, effect: FX_FSM_POS },
           { id: "fsm_f_dir", name: "前座（F）方向", en: "Suspension mount F", type: "select", options: ["△", "▽"], factory: "▽", effect: FX_FSM_DIR, note: NOTE_DIR },
           { id: "fsm_f_spacer", name: "前座（F）下墊片", en: "Suspension mount F", type: "num", step: 0.5, min: 0, unit: "mm", factory: "0", effect: FX_FSM_SPACER },
-          { id: "fsm_r_pos", viz: "top-front", name: "後座（R）刻度", en: "Suspension mount R", type: "num", signed: true, digits: 1, step: 0.5, min: 3.5, max: 5, factory: "4.0", effect: FX_FSM_POS },
+          { id: "fsm_r_pos", viz: "top-front", name: "後座（R）刻度", en: "Suspension mount R", type: "num", signed: true, digits: 1, step: 0.5, min: 3.5, max: 5, factory: "4.0", fnote: NOTE_FBUSH, effect: FX_FSM_POS },
           { id: "fsm_r_dir", name: "後座（R）方向", en: "Suspension mount R", type: "select", options: ["△", "▽"], factory: "▽", effect: FX_FSM_DIR, note: NOTE_DIR },
           { id: "fsm_r_spacer", name: "後座（R）下墊片", en: "Suspension mount R", type: "num", step: 0.5, min: 0, unit: "mm", factory: "0", effect: FX_FSM_SPACER },
           {
@@ -581,12 +588,12 @@
         name: "後下擺臂座（Rollcenter）",
         src: "設定表 p.30／說明書 p.17、p.18",
         items: [
-          { id: "rsm_f_pos", viz: "top-rear", name: "前座（F）刻度", en: "Suspension mount F", type: "num", signed: true, digits: 1, step: 0.5, min: 11.5, max: 13, factory: "12.0", effect: FX_RSM_POS },
+          { id: "rsm_f_pos", viz: "top-rear", name: "前座（F）刻度", en: "Suspension mount F", type: "num", signed: true, digits: 1, step: 0.5, min: 11.5, max: 13, factory: "12.0", fnote: NOTE_RBUSH, effect: FX_RSM_POS },
           { id: "rsm_f_dir", name: "前座（F）方向", en: "Suspension mount F", type: "select", options: ["△", "▽"], factory: "▽",
             fnote: "原廠 F 為 ▽、R 為 △，兩座方向不同", effect: FX_RSM_HEIGHT, note: NOTE_DIR },
           { id: "rsm_f_spacer", name: "前座（F）下墊片", en: "Alum. suspension mount spacer", type: "num", step: 0.5, min: 0, unit: "mm", factory: "1",
             fnote: "說明書 p.18：鋁合金擺臂座墊片 1 mm", effect: FX_RSM_HEIGHT },
-          { id: "rsm_r_pos", viz: "top-rear", name: "後座（R）刻度", en: "Suspension mount R", type: "num", signed: true, digits: 1, step: 0.5, min: 11.5, max: 13, factory: "13.0", effect: FX_RSM_POS },
+          { id: "rsm_r_pos", viz: "top-rear", name: "後座（R）刻度", en: "Suspension mount R", type: "num", signed: true, digits: 1, step: 0.5, min: 11.5, max: 13, factory: "13.0", fnote: NOTE_RBUSH, effect: FX_RSM_POS },
           { id: "rsm_r_dir", name: "後座（R）方向", en: "Suspension mount R", type: "select", options: ["△", "▽"], factory: "△",
             fnote: "原廠 F 為 ▽、R 為 △，兩座方向不同", effect: FX_RSM_HEIGHT, note: NOTE_DIR },
           { id: "rsm_r_spacer", name: "後座（R）下墊片", en: "Alum. suspension mount spacer", type: "num", step: 0.5, min: 0, unit: "mm", factory: "1",

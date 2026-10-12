@@ -8,13 +8,17 @@
  *         car        零件位置：車頭朝右的整車俯視圖，強調 opt.hot 的部位，下方寫 opt.caption
  *         front／rear           前軸／後軸正視：外傾角、車高、輪距、擺臂座高度
  *         side       側視：後傾角、前後車高、馬達座位置、電池與 ESC 位置
- *         damper-f／damper-r    避震：調整環位置、上端長度、彈簧
+ *         damper-f／damper-r    避震：調整環位置、彈簧；上端長度與軸露出長度會改變整支的長度。
+ *                               opt.active 是 rebound 時改畫封蓋那一步（軸心拉出下拉量的長度）
+ *         rod        拉桿：兩個拉桿頭之間露出的長度。opt.active 是 tie（轉向拉桿，預設）或 servo（伺服拉桿）
+ *         holes      孔位：轉向搖臂 B 的球頭孔（預設）；opt.active 是 horn 時畫伺服擺臂的孔
  *         gear       大直齒與馬達齒、終傳比
  *   cur ：目前生效的參數；fac：原廠值的參數。都由產品資料檔的 derive() 產生，沒有的填 null。
  *         目前值畫實線；和原廠值不同的部分，原廠值另外畫成虛線。
  *   opt ：{ hot: [部位名稱] } 要強調的部位（steering、front-arm、rear-arm、front-wheel、
  *         rear-wheel、front-damper、rear-damper、battery、drive、diff、servo、bumper、chassis、shell）
- *         { active: 拉桿名稱 } links 圖裡正在調整的那一支（tie、servo、fUpper、fLower、rUpper、rLower）
+ *         { active: 名稱 } 正在調整的欄位的 part。links 圖用它決定哪一支拉桿加粗
+ *         （tie、servo、fUpper、fLower、rUpper、rLower），damper、rod、holes 圖用它決定畫哪一種（見上）
  */
 (function () {
   "use strict";
@@ -324,40 +328,178 @@
     return "";
   }
 
-  function damper(name, D, DF) {
+  var MMD = 4;   // 避震圖：1 mm 畫成幾個單位（調整量只有幾 mm，放大才看得出來）
+
+  // 上端的吊耳固定在左邊：「上端可調長度」「避震軸露出長度」一變，整支避震就跟著變長或變短。
+  // opt.active 是 rebound 時改畫封蓋那一步的樣子（說明書 p.24 步驟 7：還沒裝彈簧，軸心拉出指定的長度）
+  function damper(name, D, DF, opt) {
     D = D || {}; DF = DF || {};
-    var svg = root("0 0 240 116", 11.5, name + "避震");
+    var capping = !!opt && opt.active === "rebound";
+    var svg = root("0 0 240 116", 11.5, name + "避震" + (capping ? "封蓋時" : ""));
     function add(n) { svg.appendChild(n); }
-    var up = has(D.upper) ? D.upper : 0, gap = has(D.retainer) ? D.retainer : 0, wire = has(D.wire) ? D.wire : 1.5;
-    var x = 32 + up * 4, cy = 54, seat = 196;
-    function collar(g, cls) { return s("rect", { x: x + 20 + g * 4, y: cy - 22, width: 7, height: 44, rx: 2, class: cls }); }
+    function num(v, fallback) { return has(v) ? v : fallback; }
+    var cy = 50;
+    // base：避震筒上蓋的左緣；end：筒身下蓋的外側；tip：下端拉桿頭靠軸心的那一面
+    function layout(S) {
+      var up = clamp(num(S.upper, 0), 0, 4);
+      var out = capping ? clamp(num(S.rebound, 0), 0, 20) : clamp(num(S.rod, 12.5), 3, 18);
+      var base = 28 + up * MMD;
+      return { up: up, base: base, end: base + 83, tip: base + 83 + out * MMD };
+    }
+    var L = layout(D), LF = layout(DF);
+    var gap = clamp(num(D.retainer, 0), 0, 13), wire = num(D.wire, 1.5);
+    function collar(g, cls) { return s("rect", { x: L.base + 16 + clamp(g, 0, 13) * MMD, y: cy - 22, width: 7, height: 44, rx: 2, class: cls }); }
+    function dim(x1, x2, y) {
+      add(line([x1, y], [x2, y], "dg-dim"));
+      add(line([x1, y - 3], [x1, y + 3], "dg-dim"));
+      add(line([x2, y - 3], [x2, y + 3], "dg-dim"));
+    }
 
-    add(line([24, cy], [x, cy], "dg-rod"));
-    add(s("circle", { cx: 16, cy: cy, r: 9, class: "dg-eye" }));
-    add(s("rect", { x: x, y: cy - 19, width: 20, height: 38, rx: 4, class: "dg-part" }));
-    add(s("rect", { x: x + 20, y: cy - 13, width: 78, height: 26, class: "dg-thread" }));
-    add(line([x + 98, cy], [seat, cy], "dg-rod"));
+    // 總長和原廠不同時，下端吊耳的原廠位置畫成虛線
+    if (Math.abs(LF.tip - L.tip) > 0.01) add(s("circle", { cx: LF.tip + 20, cy: cy, r: 9, class: "dg-ghost" }));
 
-    // 彈簧：從調整環到下座，線徑越粗畫得越粗
-    var from = x + 27 + gap * 4, coils = 7, zig = [[from, cy - 18]];
-    for (var i = 1; i <= coils * 2; i++) zig.push([from + (seat - from) * i / (coils * 2), cy + (i % 2 ? 18 : -18)]);
-    var spring = s("polyline", { class: "dg-spring", points: pts(zig), "stroke-width": clamp(wire * 1.7, 1.5, 4) });
-    var color = springColor(D.color);
-    if (color) spring.style.stroke = color;
-    add(spring);
+    // 上端：吊耳固定，可調的那一段畫成螺牙
+    add(s("circle", { cx: 14, cy: cy, r: 9, class: "dg-eye" }));
+    add(line([23, cy], [28, cy], "dg-rod"));
+    if (L.up > 0) add(s("rect", { x: 28, y: cy - 6, width: L.up * MMD, height: 12, class: "dg-thread" }));
+    // 避震筒：上蓋、有螺牙的筒身、下蓋
+    add(s("rect", { x: L.base, y: cy - 19, width: 16, height: 38, rx: 4, class: "dg-part" }));
+    add(s("rect", { x: L.base + 16, y: cy - 13, width: 64, height: 26, class: "dg-thread" }));
+    add(s("rect", { x: L.base + 80, y: cy - 15, width: 3, height: 30, class: "dg-part" }));
+    // 軸心
+    add(line([L.end, cy], [L.tip + 11, cy], "dg-rod"));
 
-    if (has(DF.retainer) && DF.retainer !== gap) add(collar(DF.retainer, "dg-ghost"));
-    add(collar(gap, "dg-collar"));
-    add(s("rect", { x: seat, y: cy - 20, width: 6, height: 40, rx: 2, class: "dg-part" }));
-    add(line([seat + 6, cy], [209, cy], "dg-rod"));
-    add(s("circle", { cx: 218, cy: cy, r: 9, class: "dg-eye" }));
-    if (has(D.lower)) add(label(218, cy + 4, String(D.lower), "dg-small"));
+    if (capping) {
+      add(collar(gap, "dg-part"));
+    } else {
+      // 彈簧：從調整環到下座，線徑越粗畫得越粗
+      var from = L.base + 23 + gap * MMD, coils = 7, zig = [[from, cy - 18]];
+      for (var i = 1; i <= coils * 2; i++) zig.push([from + (L.tip - from) * i / (coils * 2), cy + (i % 2 ? 18 : -18)]);
+      var spring = s("polyline", { class: "dg-spring", points: pts(zig), "stroke-width": clamp(wire * 1.7, 1.5, 4) });
+      var color = springColor(D.color);
+      if (color) spring.style.stroke = color;
+      add(spring);
+      if (has(DF.retainer) && DF.retainer !== D.retainer) add(collar(DF.retainer, "dg-ghost"));
+      add(collar(gap, "dg-collar"));
+      add(s("rect", { x: L.tip, y: cy - 20, width: 6, height: 40, rx: 2, class: "dg-part" }));
+    }
+    // 下端拉桿頭
+    add(s("circle", { cx: L.tip + 20, cy: cy, r: 9, class: "dg-eye" }));
+    if (has(D.lower)) add(label(L.tip + 20, cy + 4, String(D.lower), "dg-small"));
 
-    add(line([x + 20, cy - 28], [x + 20 + gap * 4, cy - 28], "dg-dim"));
-    add(label(x + 20 + gap * 2, cy - 33, "調整環 " + shown(D.retainer, " mm")));
-    if (up > 0) add(label(4, cy - 33, "上端 +" + round1(up), "dg-small", "start"));
-    add(label(120, 98, "油 #" + shown(D.oil, "") + "　活塞 " + shown(D.pistonHoles, " 孔") + " φ" + shown(D.pistonDia, ""), "dg-small"));
-    add(label(120, 112, "彈簧 " + shown(D.len, " mm") + " φ" + shown(D.wire, "") + " " + (D.color || ""), "dg-small"));
+    if (L.up > 0) {
+      dim(28, L.base, cy + 25);
+      add(label(4, 90, "上端 +" + round1(D.upper) + " mm", "dg-small", "start"));
+    }
+    if (capping) {
+      add(label(4, 14, "封蓋時（還沒裝彈簧）", "dg-label", "start"));
+      dim(L.end, L.tip, cy + 25);
+      add(label(clamp((L.end + L.tip) / 2, 118, 200), 90, "下拉 " + shown(D.rebound, " mm"),
+        "dg-label" + (has(DF.rebound) && DF.rebound !== D.rebound ? " is-changed" : "")));
+      add(label(120, 102, "軸心拉出這個長度後蓋上避震上蓋", "dg-small"));
+      add(label(120, 114, has(DF.rebound) ? "原廠 " + DF.rebound + " mm" : "", "dg-small"));
+      return svg;
+    }
+    dim(L.base + 16, L.base + 16 + gap * MMD, cy - 27);
+    add(label(clamp(L.base + 16 + gap * MMD / 2, 46, 110), 14, "調整環 " + shown(D.retainer, " mm")));
+    dim(L.end, L.tip, cy - 27);
+    add(label(clamp((L.end + L.tip) / 2, 150, 208), 14, "軸 " + shown(D.rod, " mm"), "dg-small"));
+    add(label(120, 102, "油 #" + shown(D.oil, "") + "　活塞 " + shown(D.pistonHoles, " 孔") + " φ" + shown(D.pistonDia, "") +
+      (has(D.rebound) ? "　下拉 " + D.rebound : ""), "dg-small"));
+    add(label(120, 114, "彈簧 " + shown(D.len, " mm") + " φ" + shown(D.wire, "") + " " + (D.color || ""), "dg-small"));
+    return svg;
+  }
+
+  /* ---------- 拉桿：兩個拉桿頭之間露出的長度 ---------- */
+
+  var ROD_NAMES = { tie: "轉向拉桿", servo: "伺服拉桿" };
+
+  // 左邊的拉桿頭固定，右邊的跟著長度移動。opt.active 指定畫哪一支，沒指定就畫轉向拉桿
+  function rod(P, F, opt) {
+    var key = opt && ROD_NAMES[opt.active] ? opt.active : "tie";
+    var now = (P.links || {})[key], fac = (F.links || {})[key];
+    var svg = root("0 0 240 116", 11.5, ROD_NAMES[key]);
+    function add(n) { svg.appendChild(n); }
+    var cy = 56, MM = 5, left = 66;
+    function face(v) { return left + clamp(has(v) ? v : 15, 4, 22) * MM; }
+    // 拉桿頭：x 是靠螺牙的那一面，dir 是它朝哪一邊伸出去
+    function head(x, dir, ghost) {
+      add(s("rect", { x: dir > 0 ? x : x - 36, y: cy - 9, width: 36, height: 18, rx: 2, class: ghost ? "dg-ghost" : "dg-part" }));
+      add(s("circle", { cx: x + dir * 45, cy: cy, r: 9, class: ghost ? "dg-ghost" : "dg-eye" }));
+    }
+    var right = face(now), changed = has(now) && has(fac) && now !== fac;
+
+    if (changed) head(face(fac), 1, true);
+    add(s("rect", { x: left, y: cy - 4, width: right - left, height: 8, class: "dg-thread" }));
+    add(s("rect", { x: (left + right) / 2 - 6, y: cy - 7, width: 12, height: 14, rx: 1, class: "dg-part" }));
+    head(left, -1);
+    head(right, 1);
+
+    add(line([left, cy - 22], [right, cy - 22], "dg-dim"));
+    add(line([left, cy - 27], [left, cy - 11], "dg-dim"));
+    add(line([right, cy - 27], [right, cy - 11], "dg-dim"));
+    add(label(clamp((left + right) / 2, 70, 170), 20, ROD_NAMES[key] + " " + shown(now, " mm"), "dg-label" + (changed ? " is-changed" : "")));
+    add(label(120, 88, key === "tie" ? "量兩個拉桿頭之間露出的長度，左右兩支要一樣" : "依伺服機調整，對正轉向的中立點", "dg-small"));
+    add(label(120, 103, has(fac) ? "原廠 " + fac + " mm" + (changed ? "（虛線）" : "") : "說明書沒有給數值", "dg-small"));
+    return svg;
+  }
+
+  /* ---------- 孔位：轉向搖臂 B、伺服擺臂 ---------- */
+
+  function holes(P, F, opt) {
+    return opt && opt.active === "horn" ? horn(P, F) : armB(P, F);
+  }
+
+  // 球頭畫成紅色的圓，原廠的孔畫成虛線圈
+  function ball(add, x, y, now, fac) {
+    if (fac && !now) add(s("circle", { cx: x, cy: y, r: 7.5, class: "dg-ghost" }));
+    if (now) add(s("circle", { cx: x, cy: y, r: 6.5, class: "dg-collar" }));
+  }
+
+  // 轉向搖臂 B：長孔有 4 個位置，由轉軸往外編成孔 1～孔 4
+  function armB(P, F) {
+    var svg = root("0 0 240 116", 11.5, "轉向搖臂 B 的球頭孔位");
+    function add(n) { svg.appendChild(n); }
+    var cy = 50, xs = [136, 153, 170, 187];
+    add(s("circle", { cx: 15, cy: cy, r: 8, class: "dg-part" }));
+    add(s("circle", { cx: 50, cy: cy, r: 31, class: "dg-part" }));
+    add(s("polygon", { points: pts([[58, cy - 30], [190, cy - 15], [190, cy + 15], [58, cy + 30]]), class: "dg-part" }));
+    add(s("circle", { cx: 190, cy: cy, r: 15, class: "dg-part" }));
+    add(s("circle", { cx: 50, cy: cy, r: 21, class: "dg-hole" }));
+    add(s("circle", { cx: 13, cy: cy, r: 3.5, class: "dg-hole" }));
+    add(s("circle", { cx: 89, cy: cy, r: 3.5, class: "dg-hole" }));
+    add(s("rect", { x: 100, y: cy - 9, width: 17, height: 18, rx: 5, class: "dg-hole" }));
+    xs.forEach(function (x) { add(s("circle", { cx: x, cy: cy, r: 8.5, class: "dg-hole" })); });
+    xs.forEach(function (x, i) {
+      var n = i + 1;
+      ball(add, x, cy, P.armB === n, F.armB === n);
+      add(label(x, cy + 32, String(n), P.armB === n ? "dg-label" : "dg-small"));
+    });
+    add(label(50, cy + 4, "轉軸", "dg-small"));
+    add(label(236, 14, has(P.armB) ? "球頭在孔 " + P.armB : "球頭孔位未設定", "dg-label" + (has(P.armB) && has(F.armB) && P.armB !== F.armB ? " is-changed" : ""), "end"));
+    add(label(120, 102, "孔由轉軸往外數；紅色是球頭的位置", "dg-small"));
+    add(label(120, 114, has(F.armB) ? "原廠在孔 " + F.armB + (P.armB !== F.armB ? "（虛線）" : "") : "", "dg-small"));
+    return svg;
+  }
+
+  // 伺服擺臂：擺臂上刻著 21.5、17.5 兩個孔
+  function horn(P, F) {
+    var svg = root("0 0 240 116", 11.5, "伺服擺臂的球頭孔位");
+    function add(n) { svg.appendChild(n); }
+    var cy = 50, spots = [[17.5, 158], [21.5, 186]];
+    add(s("circle", { cx: 52, cy: cy, r: 28, class: "dg-part" }));
+    add(s("polygon", { points: pts([[58, cy - 27], [190, cy - 12], [190, cy + 12], [58, cy + 27]]), class: "dg-part" }));
+    add(s("circle", { cx: 190, cy: cy, r: 12, class: "dg-part" }));
+    add(s("circle", { cx: 52, cy: cy, r: 17, class: "dg-hole" }));
+    add(s("circle", { cx: 52, cy: cy, r: 5, class: "dg-part" }));
+    spots.forEach(function (sp) {
+      add(s("circle", { cx: sp[1], cy: cy, r: 6, class: "dg-hole" }));
+      ball(add, sp[1], cy, P.hornHole === sp[0], F.hornHole === sp[0]);
+      add(label(sp[1], cy + 30, String(sp[0]), P.hornHole === sp[0] ? "dg-label" : "dg-small"));
+    });
+    add(label(52, cy + 44, "伺服機出力軸", "dg-small"));
+    add(label(236, 14, has(P.hornHole) ? "球頭在 " + P.hornHole + " 孔" : "球頭孔位未設定", "dg-label" + (has(P.hornHole) && has(F.hornHole) && P.hornHole !== F.hornHole ? " is-changed" : ""), "end"));
+    add(label(120, 114, "紅色是球頭的位置" + (has(F.hornHole) ? "；原廠在 " + F.hornHole + " 孔" + (P.hornHole !== F.hornHole ? "（虛線）" : "") : ""), "dg-small"));
     return svg;
   }
 
@@ -400,8 +542,10 @@
     if (kind === "front") return axle(true, P, F);
     if (kind === "rear") return axle(false, P, F);
     if (kind === "side") return side(P, F);
-    if (kind === "damper-f") return damper("前", cur.fd, fac.fd);
-    if (kind === "damper-r") return damper("後", cur.rd, fac.rd);
+    if (kind === "damper-f") return damper("前", cur.fd, fac.fd, opt);
+    if (kind === "damper-r") return damper("後", cur.rd, fac.rd, opt);
+    if (kind === "rod") return rod(P, F, opt);
+    if (kind === "holes") return holes(P, F, opt);
     if (kind === "gear") return gear(P, F);
     return null;
   }

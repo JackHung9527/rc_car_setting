@@ -387,6 +387,7 @@ button.row-name { min-height: 40px; }
 .dg-eye { fill: none; stroke: var(--muted); stroke-width: 4; }
 .dg-thread { fill: var(--dg-body); stroke: var(--muted); stroke-width: 1; stroke-dasharray: 2 2; }
 .dg-collar { fill: var(--accent); }
+.dg-hole { fill: var(--card); }   /* 零件上的孔：和圖的底色一樣 */
 .dg-spring { fill: none; stroke: var(--dg-tire); stroke-linejoin: round; }
 .dg-label { fill: var(--text); font-weight: 700; }
 .dg-small { fill: var(--muted); font-size: 0.85em; }
@@ -450,3 +451,40 @@ button.row-name { min-height: 40px; }
   color: var(--text);
 }
 .pin .dg, .stage-side .dg { padding: 6px 8px 4px; }
+
+/* 原廠圖：原廠圖檔的一塊（js/app.js 的 makeFigure）。原圖是白底黑線，反白成黑底白線才和這個網站一致；
+   上面疊的記號是目前的設定：紅色是正在調的欄位，銀色是同一塊圖裡的其他欄位，金色虛線是原廠的選項 */
+
+.fig { margin: 0; }
+/* 外框用陰影畫，不要用 border：圖是照容器的寬高用百分比定位的，border 會讓內容區的長寬比和裁切範圍差一點，
+   離原圖左上角很遠的那幾塊就會整個偏掉 */
+.fig-crop { position: relative; margin: 1px auto 0; overflow: hidden; background: #000000; box-shadow: 0 0 0 1px var(--frame), 0 0 5px #444444; }
+.fig-img { position: absolute; max-width: none; height: auto; filter: invert(1) hue-rotate(180deg); pointer-events: none; -webkit-user-select: none; user-select: none; }
+.fig-layer { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+/* 塗黑的地方，與零件翻面安裝時要轉 180° 的那一塊（裡面是同一張圖的另一份） */
+.fig-hide { position: absolute; background: #000000; }
+.fig-paint { position: absolute; border-radius: 999px; background: var(--accent); box-shadow: 0 0 5px var(--glow); }
+.fig-turn { position: absolute; overflow: hidden; background: #000000; transition: transform 0.25s; }
+.fig-turn.is-turned { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .fig-turn { transition: none; } }
+.fig-cap, .fig-missing { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.3; text-align: center; }
+.fig-missing { padding: 28px 0; }
+
+.fig-val, .fig-opt { position: absolute; transform: translate(-50%, -50%); }
+.fig-val[data-side="l"] { transform: translate(0, -50%); }       /* 從這一點往右寫（「Camber: ___」這種空格） */
+.fig-val[data-side="r"] { transform: translate(-100%, -50%); }   /* 寫到這一點為止（「___ mm」這種空格） */
+.fig-val { padding: 0 4px; border: 1px solid var(--frame); background: #000000; color: var(--silver); font-size: 12px; font-weight: 700; line-height: 15px; white-space: nowrap; }
+.fig-val.is-on { border-color: var(--accent); background: var(--accent); color: #ffffff; box-shadow: 0 0 8px var(--glow); }
+
+/* 圈在孔或方框上的記號是圓的：它是畫在圖上的圈，不是介面上的方塊 */
+.fig-opt { width: 22px; height: 22px; border: 1px solid var(--muted); border-radius: 50%; }
+.fig-opt.is-factory { border: 1px dashed var(--gold); }
+.fig-opt.is-picked { border: 2px solid var(--silver); }
+.fig-opt.is-on.is-picked { border-color: var(--accent); box-shadow: 0 0 8px var(--glow), inset 0 0 5px var(--glow); }
+.fig-opt[data-label]::after { content: attr(data-label); position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); margin: 3px; padding: 0 3px; background: #000000; color: var(--muted); font-size: 12px; font-weight: 700; line-height: 14px; }
+.fig-opt[data-side="b"]::after { top: 100%; bottom: auto; }
+.fig-opt[data-side="l"]::after { top: 50%; right: 100%; bottom: auto; left: auto; transform: translateY(-50%); }
+.fig-opt[data-side="r"]::after { top: 50%; bottom: auto; left: 100%; transform: translateY(-50%); }
+.fig-opt.is-factory::after { color: var(--gold); }
+.fig-opt.is-picked::after { color: var(--silver); }
+.fig-opt.is-on.is-picked::after { color: var(--accent); }
