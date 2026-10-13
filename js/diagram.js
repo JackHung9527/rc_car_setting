@@ -8,7 +8,7 @@
  *         car        零件位置：車頭朝右的整車俯視圖，強調 opt.hot 的部位，下方寫 opt.caption
  *         front／rear           前軸／後軸正視：外傾角、車高、輪距、擺臂座高度
  *         side       側視：後傾角、前後車高、馬達座位置、電池與 ESC 位置
- *         damper-f／damper-r    避震：調整環位置、彈簧；上端長度與軸露出長度會改變整支的長度。
+ *         damper-f／damper-r    避震：調整環位置、彈簧（自己評的硬度畫成圈數與下方的十格）；上端長度與軸露出長度會改變整支的長度。
  *                               opt.active 是 rebound 時改畫封蓋那一步（軸心拉出下拉量的長度）
  *         rod        拉桿：兩個拉桿頭之間露出的長度。opt.active 是 tie（轉向拉桿，預設）或 servo（伺服拉桿）
  *         holes      孔位：轉向搖臂 B 的球頭孔（預設）；opt.active 是 horn 時畫伺服擺臂的孔
@@ -335,7 +335,8 @@
   function damper(name, D, DF, opt) {
     D = D || {}; DF = DF || {};
     var capping = !!opt && opt.active === "rebound";
-    var svg = root("0 0 240 116", 11.5, name + "避震" + (capping ? "封蓋時" : ""));
+    // 平常的圖下方多一排彈簧硬度的格子，所以比封蓋那張高一點
+    var svg = root(capping ? "0 0 240 116" : "0 0 240 130", 11.5, name + "避震" + (capping ? "封蓋時" : ""));
     function add(n) { svg.appendChild(n); }
     function num(v, fallback) { return has(v) ? v : fallback; }
     var cy = 50;
@@ -348,6 +349,7 @@
     }
     var L = layout(D), LF = layout(DF);
     var gap = clamp(num(D.retainer, 0), 0, 13), wire = num(D.wire, 1.5);
+    var rate = has(D.rate) ? clamp(Math.round(D.rate), 1, 10) : 0;   // 自己評的彈簧硬度，1～10；0 是還沒填
     function collar(g, cls) { return s("rect", { x: L.base + 16 + clamp(g, 0, 13) * MMD, y: cy - 22, width: 7, height: 44, rx: 2, class: cls }); }
     function dim(x1, x2, y) {
       add(line([x1, y], [x2, y], "dg-dim"));
@@ -372,8 +374,8 @@
     if (capping) {
       add(collar(gap, "dg-part"));
     } else {
-      // 彈簧：從調整環到下座，線徑越粗畫得越粗
-      var from = L.base + 23 + gap * MMD, coils = 7, zig = [[from, cy - 18]];
+      // 彈簧：從調整環到下座，線徑越粗畫得越粗；自己評的硬度越高，圈數畫得越少（沒填就是 7 圈）
+      var from = L.base + 23 + gap * MMD, coils = rate ? 10 - Math.round(rate / 2) : 7, zig = [[from, cy - 18]];
       for (var i = 1; i <= coils * 2; i++) zig.push([from + (L.tip - from) * i / (coils * 2), cy + (i % 2 ? 18 : -18)]);
       var spring = s("polyline", { class: "dg-spring", points: pts(zig), "stroke-width": clamp(wire * 1.7, 1.5, 4) });
       var color = springColor(D.color);
@@ -407,6 +409,12 @@
     add(label(120, 102, "油 #" + shown(D.oil, "") + "　活塞 " + shown(D.pistonHoles, " 孔") + " φ" + shown(D.pistonDia, "") +
       (has(D.rebound) ? "　下拉 " + D.rebound : ""), "dg-small"));
     add(label(120, 114, "彈簧 " + shown(D.len, " mm") + " φ" + shown(D.wire, "") + " " + (D.color || ""), "dg-small"));
+    // 彈簧硬度：十格，填到第幾級就亮到第幾格
+    add(label(58, 127, "硬度", "dg-small", "end"));
+    for (var k = 1; k <= 10; k++) {
+      add(s("rect", { x: 50 + k * 13, y: 119, width: 11, height: 8, class: "dg-cell" + (k <= rate ? " is-on" : "") }));
+    }
+    add(label(196, 127, rate ? rate + "／10" : "未填", rate ? "dg-label" : "dg-small", "start"));
     return svg;
   }
 

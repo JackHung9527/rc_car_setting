@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - GitHub：`JackHung9527/rc_car_setting`，public（使用者 2026-10-12 指示：手機要能本地端使用，所以設為 public）
 - 發佈：GitHub Pages，由 `main` 分支的根目錄直接發佈（使用者 2026-10-12 指示開啟），網址 <https://jackhung9527.github.io/rc_car_setting/>，設定理論頁是 `…/theory.html`。**push 到 `main` 就等於更新線上的網站**，大約一分鐘後生效。根目錄的 `.nojekyll` 讓 GitHub 不經 Jekyll 處理、原樣發佈，不要刪。GitHub Pages 的檔名分大小寫（Windows 本機不分），`index.html`／`theory.html` 裡引用的路徑大小寫要和實際檔名完全一致
-- 目前狀態：第二版版面（車圖為主，見「版面」一節）。車架已建立 MST RMX 4 GT（92 個設定欄位，另有「全車拉桿」卡片與 42 項改裝件清單）。各分類有哪些子項目看 `README.md` 的分類表
+- 目前狀態：第二版版面（車圖為主，見「版面」一節）。車架已建立 MST RMX 4 GT（94 個設定欄位，另有「全車拉桿」卡片與 42 項改裝件清單），總覽頁下方有「車輛特性」摘要（見「車輛特性」一節）。各分類有哪些子項目看 `README.md` 的分類表
 
 ## 版面
 
@@ -39,6 +39,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 node --check js/app.js          # 語法檢查，js/、data/ 下每個改過的檔都跑一次
+node tools/check-traits.js      # 車輛特性的規則有沒有指到不存在的敘述；改了車架欄位的 effect 文字或理論資料的 id 之後要跑
 ```
 
 沒有自動化測試。改完用瀏覽器在手機寬度（390px）看排版，並實際做一次匯出 CSV 再匯入。改到 `css/style.css` 時兩個頁面都要看（它是共用的），360px 寬也看一次頁首的五個頁籤排不排得下（390px 寬時五個頁籤加「設定理論」連結只剩幾 px 的餘裕，改頁首的字距或留白要重量）。
@@ -56,12 +57,14 @@ node --check js/app.js          # 語法檢查，js/、data/ 下每個改過的�
 - `js/app.js`：畫面（總覽頁與編輯頁）、`localStorage` 儲存（key `rc_car_setting:v2`）、CSV 匯出匯入。資料檔可用的屬性與外掛掛點（`window.RC_PLUGINS`）都寫在檔頭註解
 - `js/diagram.js`：自己畫的 SVG 示意圖（整車俯視、前後軸局部俯視、前後軸正視、側視、避震、齒輪、全車拉桿、零件位置），由產品的 `derive()` 餵參數，跟著欄位數值即時變化
 - `js/visual.js`、`css/visual.css`：掛在 `RC_PLUGINS` 上的外掛，把數值畫成滑桿、刻度條、小圖示、曲線圖（曲線圖釘在編輯頁上方，總覽頁卡片上有縮圖）。資料檔的欄位或群組有對應屬性（`min`／`max`／`step`、`scale`、`glyphs`、`charts`、`locks`）才會出現，屬性格式在 `js/visual.js` 檔頭註解
+- `js/traits.js`、`css/traits.css`、`data/chassis-mst-rmx4-gt-traits.js`：總覽頁下方的「車輛特性」。`traits.js` 也是掛在 `RC_PLUGINS` 上的外掛（`overview` 掛點），規則寫在車架的 `-traits.js`（要排在車架資料檔之後載入），見「車輛特性」一節
+- `tools/check-traits.js`：在 Node 裡檢查車輛特性的規則，不是網頁的一部分
 - `css/style.css`：整站共用的樣式（兩個頁面都載入），手機優先、MST 官網風格，只有深色；顏色都走 CSS 變數。檔尾的「展示台」「放圖的方塊」兩段是放圖的容器
 - `icons/`：網站的圖示（使用者 2026-10-12 指示設計）。圖案是一台雙門跑車的俯視圖（車頭朝上）：黑底、銀色車殼、深色車窗、紅色雙條紋、黑色尾翼、車底一圈紅色光暈，配色跟著 `css/style.css`，不用 MST 的商標。第一版是用矩形拼的車架示意圖，使用者看了說「很像隨便弄個線條組出來的」，要求車體真實一點，所以改成有弧線的車殼；「不要傾斜的東西」指的是介面上的方塊、色帶與字，車子本身的外形不在此限，但車還是擺正、不要轉成斜的。`icon-large.svg` 是手機主畫面用的完整版，轉成 `apple-touch-icon.png`（180×180、不透明；iOS 會自己切圓角，所以不畫外框）；`icon.svg` 是瀏覽器分頁用的簡化版（座標都取偶數，縮到 16px 才會落在整數像素上），同時轉成 `favicon.ico`（16／32／48 各自從 SVG 轉，不是從大圖縮）。PNG 與 ICO 是轉出來的檔：改圖示時改 SVG，再用無頭 Edge 把 SVG 截成各尺寸的 PNG、用 Pillow 存成 ICO。兩個 HTML 的 `<head>` 各有三行 `<link>` 指到這裡，新增頁面時要一起加
 - `data/<類別>-<產品>.js`：一個子項目一個檔，把產品物件推進 `window.RC_PRODUCTS`
 - `data/chassis-mst-rmx4-gt-upgrades.js`：RMX 4 GT 的改裝件清單。要排在車架資料檔之後載入，它把群組與卡片加到同一個產品物件上
 - `data/chassis-mst-rmx4-gt-sheet.js`：RMX 4 GT 的原廠圖（見「開發規則」裡圖片可視化那一條）。也要排在車架資料檔之後載入，它替欄位補上 `fig`：每個欄位在官方圖檔上的位置
-- `theory.html`、`data/theory-xray.js`、`js/theory.js`、`js/theory-diagram.js`、`css/theory.css`：設定理論頁，和設定記錄頁是兩個獨立的頁面，只共用 `css/style.css`（見「設定理論頁」一節）。`data/theory-xray.js` 不是產品資料，不要加進 `index.html`
+- `theory.html`、`data/theory-xray.js`、`js/theory.js`、`js/theory-diagram.js`、`css/theory.css`：設定理論頁，和設定記錄頁是兩個獨立的頁面，只共用 `css/style.css`（見「設定理論頁」一節）。`data/theory-xray.js` 不是產品資料（不會推進 `RC_PRODUCTS`）；`index.html` 也載入它，只給「車輛特性」引用原書的敘述
 
 手機要能直接開本機檔案（`file://`），所以不用 ES module、不用 `fetch`。
 
@@ -85,7 +88,24 @@ node --check js/app.js          # 語法檢查，js/、data/ 下每個改過的�
 - 選項文字不要用 `=`、`+`、`-`、`@` 開頭，匯出的 CSV 用試算表開會被當成公式（說明書的「=Drag Brake」因此寫成「等於拖曳煞車（=Drag Brake）」）
 - 曲線圖只畫說明書有講清楚的規則；說明書沒講的部分（例如 Boost 設 Auto 時中間怎麼變化）用虛線並在圖下註明是示意
 - 說明書完全沒寫出廠值的產品（伺服機 TDS-2 的參數要接設定盒才讀得到）不寫 `factory`，也不要拿說明書裡別的型號的畫面範例當出廠值；可調範圍有寫的照樣給 `min`／`max`。這種產品總覽頁右上角會改顯示「已填 N 項，說明書沒有出廠值」
+- 彈簧另外有一個「彈簧硬度」欄位（`fd_spring_rate`／`rd_spring_rate`，1～10 級，自己填）。使用者 2026-10-13 指示：「彈簧因為有很多選擇，但是沒有區別，所以讓我可以手動填入它是哪種硬度，分 10 個等級」。說明書沒有這種等級，所以沒有 `factory`；避震圖用圈數（越硬越少圈）與下方的十格表示。長度、線徑、顏色三個欄位照樣留著
 - 規格書的內容用回傳固定文字的 `calc` 欄位做成唯讀列（規格書的項目編號寫在 `en`，出處寫在 `fnote`），圖和它共用同一組常數。曲線圖畫不出來的圖（外形尺寸圖、角度圖）讓 `charts` 的 `build()` 回傳 `{ title, svg, note }`。寫法看 `data/servo-powerhd-tds2.js`
+
+## 車輛特性
+
+使用者 2026-10-13 指示：**車架設定在下面給出一份「根據目前調整所得到的車子所有特性」，可以參考調車理論；特性分成入彎、彎中、出彎、加油門、放油門等等當成大項目，其他的特性由 Claude 分類。**
+
+目前的做法（除了上面那句，都是 Claude 選的預設，尚未經使用者確認）：
+
+- 位置在總覽頁工具列的下方。最上面是方向圖：入彎、彎中、出彎的轉向，以及抓地、反應、穩定、車體滾動，往左是減少、往右是增加，一格是一句敘述。下面是大項目的按鈕（入彎、彎中、出彎、加油門、放油門／煞車一定列出，左右切換、直線、推頭／甩尾、抓地力、反應與手感、車身動作、穩定性、動力與負載、場地、其他有敘述才出現），點哪一格就列出那一項的敘述。再下面的「依調整項目看」把同樣的內容依欄位排，每一條有「調整這一項」與「看理論」兩個按鈕
+- 比較的基準是原廠值：和原廠不同的欄位才有「往哪邊變」。選項本身就有說明的欄位（齒輪箱模式、ESC 位置、電池型式、伺服擺臂孔位、前後車高差）在全部原廠值時也會列出來，標成「原廠配置」
+- 敘述一律引用現成的文字，`js/traits.js` 與規則檔都不自己寫特性：車架資料檔的 `effect`（標「說明書」或「一般原則」）與設定理論的原書敘述（標「XRAY p.頁碼」）。方向圖只統計原書敘述的 `tags`，所以它是原書（四驅房車）的說法，畫面下方有一段說明
+- 規則的格式寫在 `js/traits.js` 檔頭，對應的原則寫在 `data/chassis-mst-rmx4-gt-traits.js` 檔頭。重點：說明書沒寫方向的（哪個孔力臂短、△▽ 哪個高、加墊片後避震更直還是更斜）用 `maybe` 把兩種可能都列出來，不替使用者猜；好幾個欄位決定同一件事的（輪距、軸距、阻尼、避震總長）合成一條；拉桿長度、調整環這類「用來調出另一個量測值」的欄位不接理論，理論接在量測值（外傾角、前束、車高）上
+- 彈簧看自己填的硬度：1～4 當偏軟、5～6 當中等（不列特性）、7～10 當偏硬；沒填才看線徑和原廠比變粗還是變細。這個分界是 Claude 訂的
+- 大項目是用關鍵字分的（`js/traits.js` 的 `CATS`），一句可以同時屬於好幾項；原書的敘述另外依 `tags` 歸類。改關鍵字之後用 `node tools/check-traits.js all` 看每一項分到哪些句子
+- 規則用文字對應 `effect` 的條件（`w`），所以**改車架資料檔 `effect` 的條件文字、或理論資料的項目 id 與調整方向 id 之後，要跑 `node tools/check-traits.js`**
+- 理論資料為了這份摘要多了四種標籤（`stab-`、`brk-`、`roll+`、`g-`），都是原書寫明的相反方向，沒有對應的症狀選項，不影響設定理論頁
+- 還沒做：改裝件裝了之後的特性（官網的說明現在混在 `fnote` 裡）；其他分類（電變、陀螺儀、伺服機、遙控器）的特性
 
 ## 設定理論頁
 
@@ -153,4 +173,4 @@ node --check js/app.js          # 語法檢查，js/、data/ 下每個改過的�
   - 技術選型：不用框架的靜態 HTML + JavaScript
   - 資料存放：瀏覽器 `localStorage`，一個產品一組目前的設定（沒有多組存檔），只存和原廠不同的項目
   - CSV 欄位：`product_id, product, group, item_id, item, value, unit, factory`，匯出的是生效值（沒改的欄位寫原廠值），匯入只認 `product_id`、`item_id`、`value`
-- 設定記錄頁的欄位要不要連到設定理論頁對應的項目（目前兩頁只在頁首互相連結）
+- 設定記錄頁的欄位要不要連到設定理論頁對應的項目（目前只有「車輛特性」的「看理論」按鈕會連過去，編輯頁的欄位沒有連）

@@ -51,7 +51,12 @@
  *   pin(p, card, api)   回傳要釘在編輯頁上方（示意圖後面）的節點；api.pin 為 true 表示有這個掛點
  *   card(p, card, api)  回傳要放進總覽頁卡片（摘要文字後面）的節點；卡片本身是按鈕，裡面不能再放可點的東西。
  *                       api.card 為 true 表示有這個掛點
+ *   overview(p, p, api) 回傳要放在總覽頁工具列下方的節點（例如 js/traits.js 的「車輛特性」）；
+ *                       api.overview 為 true 表示有這個掛點
  *   api.values()        目前產品的生效值 { 欄位 id: 字串 }
+ *   api.factory()       目前產品的原廠值，格式同上；說明書沒寫原廠值的欄位是空字串
+ *   api.pretty(it, v)   把欄位的值寫成給人看的樣子（加上前置文字、正號與單位）
+ *   api.open(cardId)    開啟某張卡片的編輯頁
  *   api.set(id, value)  寫入某個欄位，等同使用者輸入
  *   api.onChange(fn)    任何欄位改變後呼叫 fn()；整頁重畫時舊的 fn 會被丟掉
  *   api.stepper         true：num 欄位已有內建的加減按鈕，外掛不要再畫一組
@@ -305,7 +310,11 @@
       stepper: true,
       pin: true,
       card: true,
+      overview: true,
       values: function () { return state(p).eff; },
+      factory: function () { return state(p).fac; },
+      pretty: pretty,
+      open: openCard,
       set: function (id, value) {
         if (fields[id]) fields[id](String(value));
         else { setValue(p, id, String(value)); refreshLive(); }
@@ -864,7 +873,8 @@
         ? renderStage(p, cards)
         : el("div", { class: "card-grid" }, cards.map(function (c) { return cardButton(p, c); })),
       renderToolbar(p),
-      el("p", { class: "message", role: "status", "aria-live": "polite", text: view.message }),
+      el("p", { class: "message", role: "status", "aria-live": "polite", text: view.message })
+    ].concat(pluginNodes("overview", p, p)).concat([
       el("details", { class: "fold" }, [
         el("summary", { text: "說明書下載" }),
         el("ul", { class: "manuals" }, (p.manuals || []).map(function (mn) {
@@ -881,7 +891,7 @@
         p.notes ? el("ul", { class: "fold-list" }, p.notes.map(function (n) { return el("li", { text: n }); })) : null,
         known ? el("p", { class: "fold-text", text: "每個欄位都有預設值（原廠值），只需要改不一樣的項目；改過的欄位與卡片會標上顏色。" }) : null
       ])
-    ]);
+    ]));
   }
 
   /* ---------- 整頁 ---------- */

@@ -57,6 +57,12 @@
 
   function damper(pre, zh, f) {
     var front = pre === "fd";
+    var harder = front
+      ? "車頭反應快、側傾與點頭少；前輪抓地感下降，容易推頭"
+      : "車尾反應快、側傾與蹲尾少；後輪抓地感下降，車尾容易滑出";
+    var softer = front
+      ? "前輪抓地感增加、轉向咬；重量轉移多、動作大、反應慢"
+      : "後輪抓地與牽引增加、加速時車尾下沉多；動作大、反應慢";
     return {
       id: pre,
       name: zh + "避震",
@@ -75,17 +81,17 @@
           effect: [g("換不同長度", "同樣調整環位置下預壓與車高會改變，換完要重調車高")]
         },
         { id: pre + "_spring_wire", name: "彈簧線徑", en: "Spring", type: "num", step: 0.1, min: 0, unit: "mm", factory: f.wire,
-          effect: [
-            g("線徑越粗（越硬）", front
-              ? "車頭反應快、側傾與點頭少；前輪抓地感下降，容易推頭"
-              : "車尾反應快、側傾與蹲尾少；後輪抓地感下降，車尾容易滑出"),
-            g("線徑越細（越軟）", front
-              ? "前輪抓地感增加、轉向咬；重量轉移多、動作大、反應慢"
-              : "後輪抓地與牽引增加、加速時車尾下沉多；動作大、反應慢")
-          ]
+          effect: [g("線徑越粗（越硬）", harder), g("線徑越細（越軟）", softer)]
         },
         { id: pre + "_spring_color", name: "彈簧顏色", en: "Spring color", type: "text", factory: f.color,
-          effect: [g("記錄用", "用顏色辨識彈簧硬度，特性見「彈簧線徑」")] },
+          effect: [g("記錄用", "用顏色辨識彈簧，軟硬記在「彈簧硬度」")] },
+        {
+          // 使用者 2026-10-13 指示：彈簧的選擇很多，從規格看不出差別，改成自己填硬度，分 10 級
+          id: pre + "_spring_rate", name: "彈簧硬度", sub: "自己評 1～10 級", en: "Spring rate (1 = softest, 10 = hardest)",
+          type: "num", step: 1, min: 1, max: 10, start: 5, unit: "級",
+          fnote: "1 最軟、10 最硬，依手上的彈簧自己填。說明書沒有這種等級，所以這一項沒有原廠值。總覽頁的「車輛特性」把 1～4 當偏軟、5～6 當中等、7～10 當偏硬",
+          effect: [g("越硬（數字越大）", harder), g("越軟（數字越小）", softer)]
+        },
         {
           id: pre + "_piston_dia", name: "活塞孔徑", en: "Piston", type: "num", digits: 1, step: 0.1, min: 0, unit: "mm", factory: f.pdia,
           effect: [
@@ -200,6 +206,7 @@
       function shock(pre) {
         return {
           oil: v[pre + "_oil"], len: n(pre + "_spring_len"), wire: n(pre + "_spring_wire"), color: v[pre + "_spring_color"],
+          rate: n(pre + "_spring_rate"),
           pistonDia: v[pre + "_piston_dia"], pistonHoles: v[pre + "_piston_holes"],
           retainer: n(pre + "_retainer"), upper: n(pre + "_upper_end"), lower: v[pre + "_lower_end"],
           rod: n(pre + "_rod_len"), rebound: n(pre + "_rebound")
