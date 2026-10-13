@@ -105,8 +105,12 @@ button.tr-item-open .tr-item-name::after { content: " ›"; color: var(--muted);
 .tr-lines li > * { text-indent: 0; }
 .tr-line-when { color: var(--text); font-weight: 700; }
 .tr-lines .tag, .tr-lines .tr-chip { margin-left: 5px; vertical-align: 1px; }
-.tr-lines.is-maybe { color: #b8b8b8; }
 .tr-src { margin-top: 6px; color: var(--gold); font-size: 12px; font-weight: 700; }
+
+/* 參考用的敘述（往兩邊調的影響、說明書沒寫方向時的兩種可能）：字淡一點，和確定適用的敘述分開 */
+.tr-lines.is-ref { color: #b4b4b4; }
+.tr-both { margin-top: 6px; color: var(--text); font-size: 13px; font-weight: 700; }
+.tr-line-src { color: var(--gold); font-weight: 700; }
 .tr-item-note { margin-top: 4px; color: var(--muted); font-size: 12px; }
 
 .tr-chip { display: inline-block; padding: 0 6px; border: 1px solid currentColor; font-size: 12px; line-height: 19px; white-space: nowrap; }

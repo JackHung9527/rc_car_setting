@@ -6,7 +6,13 @@
  *   fx      指到車架資料檔某個欄位的 effect（[欄位 id, 條件文字]），文字要和那邊的 w 一字不差
  *   theory  指到設定理論（data/theory-xray.js）的「項目 id/調整方向 id」
  * 對應的原則：
- *   - 「和原廠比變大還是變小」能判斷的才給 fx 與 theory；說明書沒寫方向的（哪個孔力臂短、△▽ 哪個高）
+ *   - 全部原廠值時也要有內容（使用者 2026-10-13：「就算是原廠設定，也要總結出車輛目前的特性」）。
+ *     有明確基準的設定直接寫目前的特性：前束、後束、外傾角以 0° 為基準（angle），彈簧看自己填的硬度等級，
+ *     齒輪箱模式、ESC 位置這類選項看選了哪一個。之後再看和原廠比是加大還是減小
+ *   - 避震油、差速這種「說明書和原書都沒有寫多少算硬」的，不判斷目前偏哪一邊，用 both 把往兩邊調的影響
+ *     都列出來（使用者 2026-10-13：「彈簧、阻尼油、差速的特性，如果沒有，可以查設定理論」）；
+ *     和原廠不同之後才寫比原廠硬還是軟
+ *   - 其餘的設定只在和原廠不同時才列。說明書沒寫方向的（哪個孔力臂短、△▽ 哪個高）
  *     用 maybe 把兩種可能都列出來，不替使用者猜
  *   - 好幾個欄位決定同一件事時（輪距、軸距、阻尼、避震總長）合成一條規則，理論只算一次
  *   - 用來調出另一個量測值的欄位（拉桿長度之於外傾角與前束、調整環之於車高）不接理論，
@@ -35,6 +41,37 @@
   function step(id, up, down) {
     return { items: [id], pick: function (v, f) { var d = cmp(v, f, id); return d > 0 ? "up" : d < 0 ? "down" : null; }, cases: { up: up, down: down } };
   }
+  // 以 0° 為基準的角度：目前在 0° 的哪一邊就先寫那一邊的特性（原廠值也一樣），再看和原廠比是加大還是減小。
+  // pos／neg：大於 0／小於 0 時的 { say, fx, theory }；up／down：比原廠大／小時的 { fx, theory }。
+  // 兩者是同一個方向時敘述只列一次，傾向圖算兩格
+  function angle(id, pos, neg, up, down) {
+    function parts(v, f) {
+      var n = num(v[id]), d = cmp(v, f, id);
+      return { state: n == null ? null : n > 0 ? pos : n < 0 ? neg : null, delta: d > 0 ? up : d < 0 ? down : null, why: d > 0 ? "比原廠大" : "比原廠小" };
+    }
+    function labelled(refs, label) { return (refs || []).map(function (r) { return [r[0], r[1], label]; }); }
+    return {
+      items: [id],
+      pick: function (v, f) { var x = parts(v, f); return x.state || x.delta ? "now" : null; },
+      show: function (v, f) { return v[id] + "°" + (cmp(v, f, id) ? "（原廠 " + f[id] + "°）" : ""); },
+      cases: { now: {
+        say: function (v, f) {
+          var x = parts(v, f);
+          return [x.state && x.state.say, x.delta && x.why].filter(function (t) { return t; }).join("，");
+        },
+        fx: function (v, f) {
+          var x = parts(v, f);
+          return labelled(x.state && x.state.fx, "相對於 0°").concat(labelled(x.delta && x.delta.fx, x.why));
+        },
+        theory: function (v, f) {
+          var x = parts(v, f), out = [];
+          if (x.state && x.state.theory) out.push(x.state.theory);
+          if (x.delta && x.delta.theory) out.push({ ref: x.delta.theory, why: x.why });
+          return out;
+        }
+      } }
+    };
+  }
   // 只知道改過、方向無法判斷
   function any(ids, c) {
     return { items: ids, pick: function (v, f) { return ids.some(function (id) { return changed(v, f, id); }) ? "any" : null; }, cases: { any: c } };
@@ -42,37 +79,47 @@
 
   var NOTE_DIR = "△／▽ 哪個方向的插銷比較高，說明書沒有文字說明，要對照實物";
   var NOTE_DIFF = "原書講的是滾珠差速的鬆緊；齒輪差速用油號調，油越稠越接近鎖死";
+  var NOTE_NO_SCALE = "說明書和原書都沒有寫多少算硬，所以不判斷目前偏哪一邊，只列出往兩邊調的影響";
   var NOTE_DROOP = "原書的 Droop 是用 Downstop 螺絲調的；這台車沒有 Downstop，下垂量由避震總長決定";
   var NOTE_RETAINER = "調整環改的是車高，特性看車高那一項；量到的車高記得一起更新";
 
   /* ---------- 前後各一組的規則 ---------- */
 
   // 彈簧：有填自評的硬度（1～10）就看硬度，1～4 偏軟、7～10 偏硬；沒填才看線徑和原廠比變粗還是變細。
-  // 理論：前／後彈簧較硬、較軟（原書第 6 章）
+  // 5～6 級或什麼都沒填時看不出偏向，把換硬、換軟的影響都列出來。理論：前／後彈簧較硬、較軟（原書第 6 章）
   function spring(pre, zh, topic) {
     var rate = pre + "_spring_rate", wire = pre + "_spring_wire";
     function level(v) { return num(v[rate]); }
-    function word(text) { return function (v) { return level(v) != null ? "自評 " + level(v) + "／10，" + text : "線徑和原廠不同，" + text; }; }
+    var hard = { fx: [[rate, "越硬（數字越大）"]], theory: topic + "/hard" };
+    var soft = { fx: [[rate, "越軟（數字越小）"]], theory: topic + "/soft" };
+    var both = [
+      { label: "換硬一點", fx: hard.fx, theory: hard.theory },
+      { label: "換軟一點", fx: soft.fx, theory: soft.theory }
+    ];
     return {
       id: pre + "_spring", name: zh + "彈簧", items: [rate, wire],
       pick: function (v, f) {
         var n = level(v);
         if (n != null) return n >= 7 ? "hard" : n <= 4 ? "soft" : "mid";
         var d = cmp(v, f, wire);
-        return d > 0 ? "hard" : d < 0 ? "soft" : null;
+        return d > 0 ? "thick" : d < 0 ? "thin" : "none";
+      },
+      show: function (v) {
+        return level(v) != null ? "硬度 " + level(v) + "／10" : v[pre + "_spring_len"] + " mm φ" + v[wire] + " " + v[pre + "_spring_color"];
       },
       cases: {
-        mid: { say: word("中等"), note: "5～6 級當成中等，不列偏硬或偏軟的特性" },
-        hard: { say: word("偏硬"), theory: topic + "/hard",
-          fx: function (v) { return [level(v) != null ? [rate, "越硬（數字越大）"] : [wire, "線徑越粗（越硬）"]]; } },
-        soft: { say: word("偏軟"), theory: topic + "/soft",
-          fx: function (v) { return [level(v) != null ? [rate, "越軟（數字越小）"] : [wire, "線徑越細（越軟）"]]; } }
+        hard: { say: "偏硬", fx: hard.fx, theory: hard.theory },
+        soft: { say: "偏軟", fx: soft.fx, theory: soft.theory },
+        mid: { say: "中等", both: both, note: "5～6 級當成中等，不算偏硬也不算偏軟" },
+        thick: { say: "線徑比原廠粗", fx: [[wire, "線徑越粗（越硬）"]], theory: hard.theory },
+        thin: { say: "線徑比原廠細", fx: [[wire, "線徑越細（越軟）"]], theory: soft.theory },
+        none: { say: "硬度還沒填", both: both, note: "到避震卡片填「彈簧硬度」（1～10 級），這裡就會改成偏軟或偏硬的特性" }
       }
     };
   }
 
-  // 阻尼：油號、活塞孔徑、活塞孔數一起看。三者方向一致才接理論（原書第 7 章：號數高、孔少是硬）；
-  // 方向相反時只把各自的說明列出來
+  // 阻尼：油號、活塞孔徑、活塞孔數一起看。和原廠比，三者方向一致才接理論（原書第 7 章：號數高、孔少是硬）；
+  // 方向相反時只把各自的說明列出來。全部原廠值時看不出偏向，把調硬、調軟的影響都列出來
   function damping(pre, zh, topic) {
     var oil = pre + "_oil", dia = pre + "_piston_dia", holes = pre + "_piston_holes";
     function parts(v, f) {
@@ -87,11 +134,16 @@
       id: pre + "_damping", name: zh + "避震阻尼", items: [oil, dia, holes],
       pick: function (v, f) {
         var list = parts(v, f), hard = list.filter(function (x) { return x.d > 0; }).length;
-        return !list.length ? null : hard === list.length ? "hard" : hard === 0 ? "soft" : "mixed";
+        return !list.length ? "stock" : hard === list.length ? "hard" : hard === 0 ? "soft" : "mixed";
       },
+      show: function (v) { return "油 #" + v[oil] + "、活塞 " + v[holes] + " 孔 φ" + v[dia]; },
       cases: {
-        hard: { say: "變硬", fx: fx, theory: topic + "/hard" },
-        soft: { say: "變軟", fx: fx, theory: topic + "/soft" },
+        stock: { note: NOTE_NO_SCALE, both: [
+          { label: "調硬（油號加大、活塞孔小或孔少）", fx: [[oil, "油號加大（越稠）"]], theory: topic + "/hard" },
+          { label: "調軟（油號減小、活塞孔大或孔多）", fx: [[oil, "油號減小（越稀）"]], theory: topic + "/soft" }
+        ] },
+        hard: { say: "比原廠硬", fx: fx, theory: topic + "/hard" },
+        soft: { say: "比原廠軟", fx: fx, theory: topic + "/soft" },
         mixed: { say: "油和活塞往相反的方向改", maybe: fx, see: topic, note: "整體變硬還是變軟要實際試" }
       }
     };
@@ -148,7 +200,7 @@
       };
     }
     return {
-      id: id, name: name, items: outer.concat(arm ? [arm] : [], mount),
+      id: id, name: name, names: true, items: outer.concat(arm ? [arm] : [], mount),
       pick: function (v, f, q) { var d = sign(q.now[key] - q.fac[key]); return d > 0 ? "wide" : d < 0 ? "narrow" : null; },
       show: function (v, f, q) { return "推算 " + mm(q.fac[key]) + " → " + mm(q.now[key]) + " mm"; },
       cases: {
@@ -225,14 +277,18 @@
 
     /* ---------- 前輪定位 ---------- */
 
-    // 理論：前輪束角（第 14 章）。Toe-out 減小就是往 Toe-in 的方向
-    step("f_toe",
-      { say: "Toe-out 加大", fx: [["f_toe", "Toe-out 加大"]], theory: "f-toe/out" },
-      { say: "Toe-out 減小", fx: [["f_toe", "Toe-out 減小（趨近 0）"]], theory: "f-toe/in" }),
-    // 理論：Camber（第 10 章），原書只列了負角度加大的影響
-    step("f_camber",
-      { say: "加大", fx: [["f_camber", "加大"]], theory: "camber/more" },
-      { say: "減小", fx: [["f_camber", "減小"]], theory: "camber/less" }),
+    // 理論：前輪束角（第 14 章）。欄位的正值是 Toe-out；比原廠小就是往 Toe-in 的方向
+    angle("f_toe",
+      { say: "Toe-out", fx: [["f_toe", "Toe-out 加大"]], theory: "f-toe/out" },
+      { say: "Toe-in", theory: "f-toe/in" },
+      { fx: [["f_toe", "Toe-out 加大"]], theory: "f-toe/out" },
+      { fx: [["f_toe", "Toe-out 減小（趨近 0）"]], theory: "f-toe/in" }),
+    // 理論：Camber（第 10 章），原書只列了負角度加大的影響。欄位的正值是負外傾（輪胎上緣向內）
+    angle("f_camber",
+      { fx: [["f_camber", "加大"]], theory: "camber/more" },
+      null,
+      { fx: [["f_camber", "加大"]], theory: "camber/more" },
+      { fx: [["f_camber", "減小"]], theory: "camber/less" }),
     step("f_upper_arm_gap",
       { say: "加長", fx: [["f_upper_arm_gap", "加長"]] },
       { say: "縮短", fx: [["f_upper_arm_gap", "縮短"]] }),
@@ -276,7 +332,7 @@
 
     // 理論：軸距（第 5 章）
     {
-      id: "wheelbase", name: "軸距", items: ["f_arm_shim_front", "f_arm_shim_rear", "r_arm_shim_front", "r_arm_shim_rear"],
+      id: "wheelbase", name: "軸距", names: true, items: ["f_arm_shim_front", "f_arm_shim_rear", "r_arm_shim_front", "r_arm_shim_rear"],
       pick: function (v, f, q) { var d = sign(q.now.wheelbase - q.fac.wheelbase); return d > 0 ? "long" : d < 0 ? "short" : null; },
       show: function (v, f, q) { return "推算 " + mm(q.fac.wheelbase) + " → " + mm(q.now.wheelbase) + " mm"; },
       cases: {
@@ -302,13 +358,17 @@
 
     /* ---------- 後輪定位 ---------- */
 
-    // 理論：後輪束角（第 14 章）
-    step("r_toe",
-      { say: "Toe-in 加大", fx: [["r_toe", "Toe-in 加大"]], theory: "r-toe/more" },
-      { say: "Toe-in 減小", fx: [["r_toe", "Toe-in 減小"]], theory: "r-toe/less" }),
-    step("r_camber",
-      { say: "加大", fx: [["r_camber", "加大"]], theory: "camber/more" },
-      { say: "減小", fx: [["r_camber", "減小（趨近 0）"]], theory: "camber/less" }),
+    // 理論：後輪束角（第 14 章）。欄位的正值是 Toe-in；原書說後輪只能做 Toe-in，所以負值沒有敘述
+    angle("r_toe",
+      { say: "Toe-in", fx: [["r_toe", "Toe-in 加大"]], theory: "r-toe/more" },
+      { say: "Toe-out" },
+      { fx: [["r_toe", "Toe-in 加大"]], theory: "r-toe/more" },
+      { fx: [["r_toe", "Toe-in 減小"]], theory: "r-toe/less" }),
+    angle("r_camber",
+      { fx: [["r_camber", "加大"]], theory: "camber/more" },
+      null,
+      { fx: [["r_camber", "加大"]], theory: "camber/more" },
+      { fx: [["r_camber", "減小（趨近 0）"]], theory: "camber/less" }),
     step("r_upper_link_gap",
       { say: "加長", fx: [["r_upper_link_gap", "加長"]] },
       { say: "縮短", fx: [["r_upper_link_gap", "縮短"]] }),
@@ -360,12 +420,26 @@
 
     /* ---------- 差速器、傳動、配置 ---------- */
 
-    // 理論：後差速（第 19 章）
-    step("diff_oil",
-      { say: "油號加大", fx: [["diff_type", "越接近鎖死"]], theory: "r-diff/tight", note: NOTE_DIFF },
-      { say: "油號減小", fx: [["diff_type", "越鬆（差速作用多）"]], theory: "r-diff/loose", note: NOTE_DIFF }),
-    any(["diff_type"], { say: "換了型式", maybe: [["diff_type", "越接近鎖死"], ["diff_type", "越鬆（差速作用多）"]], see: "r-diff",
-      note: "換上的差速器比原本緊還是鬆，要看它的設定" }),
+    // 理論：後差速（第 19 章）。油號和原廠不同才判斷較緊或較鬆；原廠的油號或換了型式時看不出偏向，兩邊都列
+    {
+      id: "diff", name: "後差速器", items: ["diff_type", "diff_oil"],
+      pick: function (v, f) { var d = cmp(v, f, "diff_oil"); return d > 0 ? "tight" : d < 0 ? "loose" : "ref"; },
+      show: function (v) { return v.diff_type + "，油 #" + v.diff_oil; },
+      cases: {
+        tight: { say: "油號比原廠大，較緊", fx: [["diff_type", "越接近鎖死"]], theory: "r-diff/tight", note: NOTE_DIFF },
+        loose: { say: "油號比原廠小，較鬆", fx: [["diff_type", "越鬆（差速作用多）"]], theory: "r-diff/loose", note: NOTE_DIFF },
+        ref: {
+          say: function (v, f) { return changed(v, f, "diff_type") ? "換了型式" : ""; },
+          both: [
+            { label: "調緊（油號加大，越接近鎖死）", fx: [["diff_type", "越接近鎖死"]], theory: "r-diff/tight" },
+            { label: "調鬆（油號減小，差速作用多）", fx: [["diff_type", "越鬆（差速作用多）"]], theory: "r-diff/loose" }
+          ],
+          note: function (v, f) {
+            return (changed(v, f, "diff_type") ? "換上的差速器比原本緊還是鬆，要看它的設定。" : "說明書和原書都沒有寫多少算緊，所以不判斷目前偏哪一邊。") + NOTE_DIFF;
+          }
+        }
+      }
+    },
     {
       items: ["gear_mode"],
       pick: function (v) { return /^4/.test(v.gear_mode) ? "four" : /^3/.test(v.gear_mode) ? "three" : null; },
@@ -376,7 +450,7 @@
     },
     {
       // 理論：齒比與 Rollout（第 20 章）。輪徑不變時，終傳比的數字變小就是 Rollout 變高
-      id: "final_ratio", name: "終傳比", items: ["spur", "pinion"],
+      id: "final_ratio", name: "終傳比", names: true, items: ["spur", "pinion"],
       pick: function (v, f) { var d = sign(diff(v, f, "final_ratio")); return d < 0 ? "tall" : d > 0 ? "short" : null; },
       show: function (v, f) { return f.final_ratio + " → " + v.final_ratio; },
       cases: {
