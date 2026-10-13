@@ -4,7 +4,7 @@
  * 改了那兩邊的文字或 id 之後跑一次：
  *
  *   node tools/check-traits.js          只報對應有沒有問題
- *   node tools/check-traits.js in,on    另外列出歸到這幾個大項目的敘述（all 是全部），用來看分類的關鍵字合不合理
+ *   node tools/check-traits.js list     另外列出所有可能出現的敘述與來源
  *
  * 做法：在 Node 裡載入資料檔與 js/traits.js，把每個欄位逐一改大、改小、換選項，再加幾組一起改的組合，
  * 每一組都跑一次判斷。瀏覽器裡同樣的問題會出現在主控台（「車輛特性：找不到…」），但只會報當下用到的規則。
@@ -101,16 +101,10 @@ console.log("沒被觸發過的規則：" + (idle.join("、") || "無"));
 console.log("對應有問題：" + bad.length + " 個");
 bad.forEach(function (text) { console.log("  " + text + "（設定：" + problems[text] + "）"); });
 
-if (process.argv[2]) {
-  const byCat = {};
+if (process.argv[2] === "list") {
   Object.keys(seen).forEach(function (text) {
-    seen[text].cats.forEach(function (cat) { (byCat[cat] = byCat[cat] || []).push(seen[text]); });
-  });
-  (process.argv[2] === "all" ? Object.keys(byCat) : process.argv[2].split(",")).forEach(function (cat) {
-    console.log("\n[" + cat + "] " + (byCat[cat] || []).length + " 句");
-    (byCat[cat] || []).forEach(function (s) {
-      console.log("  (" + s.src + ") " + s.text + (s.tags.length ? "  {" + s.tags.join(" ") + "}" : ""));
-    });
+    const s = seen[text];
+    console.log("  (" + s.src + ") " + s.text + (s.tags.length ? "  {" + s.tags.join(" ") + "}" : ""));
   });
 }
 process.exitCode = bad.length ? 1 : 0;

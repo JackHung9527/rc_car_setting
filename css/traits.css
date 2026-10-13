@@ -17,7 +17,7 @@
 
 .tr-box { padding: 8px 10px 10px; }
 .tr-box-title { color: #ffffff; font: 700 13.5px/1.4 var(--font-race); letter-spacing: 0.06em; }
-.tr-box-empty, .tr-box-note { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.tr-box-note { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.4; }
 .tr-sub { margin: 8px 0 2px; color: var(--gold); font-size: 12px; font-weight: 700; }
 
 /* 「減少／增加」的標題要和下面每一列的長條對齊，所以用同一組欄寬 */
@@ -48,55 +48,67 @@
 .tr-phase path { fill: none; stroke: var(--line); stroke-width: 3.5; stroke-linecap: square; }
 .tr-phase path.is-on { stroke: var(--text); }
 
-/* 大項目：一格一格的按鈕，點哪一格，下面的方塊就列出那一項的敘述 */
+/* 總覽清單：一條規則一段，全部攤開。左邊的色條：橘色是和原廠不同的設定，灰色是原廠配置本身 */
 
-.tr-cats { margin-top: 8px; }
-.tr-cat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.tr-cat-btn { display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 48px; padding: 4px 8px; text-align: left; }
-.tr-cat-btn.is-on { border-color: var(--accent); box-shadow: 0 0 8px var(--glow); }
-.tr-cat-btn:disabled { cursor: default; opacity: 0.55; }
-.tr-cat-name { overflow: hidden; font-size: 13.5px; font-weight: 700; line-height: 1.3; letter-spacing: 0.02em; white-space: nowrap; text-overflow: ellipsis; }
-.tr-cat-n { display: flex; gap: 6px; color: var(--muted); font-size: 12px; line-height: 1.35; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tr-cat-n .is-more { color: var(--tr-more); }
-.tr-cat-n .is-less { color: var(--tr-less); }
+.tr-all { margin-top: 8px; }
+.tr-list-title { margin: 12px 0 0; color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
+.tr-list { margin-top: 4px; border: 1px solid var(--line); background: var(--card); }
+.tr-item { padding: 0 12px 8px 10px; border-left: 3px solid var(--line); }
+.tr-item + .tr-item { border-top: 1px solid var(--line); }
+.tr-item.is-adjusted { border-left-color: var(--changed); }
 
-.tr-panel { margin-top: 6px; border: 1px solid var(--line); background: var(--card); box-shadow: inset 3px 0 0 var(--accent); }
-.tr-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 8px 12px 6px; }
-.tr-panel-name { font-family: var(--font-race); font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
-.tr-panel-n { color: var(--muted); font-size: 12px; }
+/* 標題列：左邊（名稱、往哪邊調、數值）點了開那一項所在的卡片，右邊的「理論」連到設定理論頁 */
+.tr-item-head { display: flex; align-items: flex-start; gap: 4px; }
+.tr-item-open {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: center;
+  gap: 0 8px;
+  min-width: 0;
+  min-height: 40px;
+  margin: 0;
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font-family: var(--font-race);
+  text-align: left;
+}
+.tr-item-name { font-size: 14.5px; font-weight: 700; line-height: 1.35; }
+button.tr-item-open .tr-item-name::after { content: " ›"; color: var(--muted); font-weight: 400; }
+.tr-item-say { color: var(--changed); font-size: 13px; font-weight: 700; line-height: 1.35; }
+.tr-item:not(.is-adjusted) .tr-item-say { color: var(--gold); }
+.tr-item-val { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.tr-item-theory {
+  display: flex;
+  flex: none;
+  align-items: center;
+  min-height: 40px;
+  padding-left: 8px;
+  color: var(--silver);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.tr-item-theory::after { content: " ›"; white-space: pre; }
+.tr-item-open:active, .tr-item-theory:active { text-shadow: 0 0 8px #cecece; }
+.tr-item-theory:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
-.tr-list { padding: 0 12px 8px; }
-.tr-st { padding: 6px 0 6px 8px; border-top: 1px solid var(--line); border-left: 2px solid var(--line); }
-.tr-st.is-adjusted { border-left-color: var(--changed); }   /* 這一句來自和原廠不同的設定 */
-.tr-st-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 8px; }
-.tr-st-from { color: var(--muted); font-size: 12px; }
-.tr-st-text { display: block; margin-top: 2px; color: #e2e2e2; font-size: 13.5px; line-height: 1.45; }
-.tr-st-tags { display: flex; flex-wrap: wrap; gap: 4px; }
-.tr-st-tags .tag { margin-left: 0; }
+/* 敘述：一句一行，前面一個點，折行時對齊文字 */
+.tr-lines { color: #dcdcdc; font-size: 13.5px; line-height: 1.5; }
+.tr-lines li { padding-left: 13px; text-indent: -13px; }
+.tr-lines li + li { margin-top: 2px; }
+.tr-lines li::before { content: "・"; color: var(--muted); }
+.tr-lines li > * { text-indent: 0; }
+.tr-line-when { color: var(--text); font-weight: 700; }
+.tr-lines .tag, .tr-lines .tr-chip { margin-left: 5px; vertical-align: 1px; }
+.tr-lines.is-maybe { color: #b8b8b8; }
+.tr-src { margin-top: 6px; color: var(--gold); font-size: 12px; font-weight: 700; }
+.tr-item-note { margin-top: 4px; color: var(--muted); font-size: 12px; }
 
 .tr-chip { display: inline-block; padding: 0 6px; border: 1px solid currentColor; font-size: 12px; line-height: 19px; white-space: nowrap; }
 .tr-chip.is-more { color: var(--tr-more); }
 .tr-chip.is-less { color: var(--tr-less); }
-.tr-tag-x { color: var(--gold); }   /* 出自《XRAY 中文設定書》 */
-
-/* 依調整項目看 */
-
-.tr-adj-fold > summary { padding-top: 12px; padding-bottom: 12px; }   /* 高度拉到 44px 以上，手指好點 */
-.tr-adj-list { padding: 0 12px 10px; }
-.tr-adj-title { margin: 10px 0 0; color: var(--gold); font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
-.tr-adj { padding: 8px 0 8px 8px; border-top: 1px solid var(--line); border-left: 2px solid var(--line); margin-top: 6px; }
-.tr-adj.is-adjusted { border-left-color: var(--changed); }
-.tr-adj-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
-.tr-adj-name { font-size: 14px; font-weight: 700; }
-.tr-adj-say { color: var(--changed); font-size: 13px; font-weight: 700; }
-.tr-adj:not(.is-adjusted) .tr-adj-say { color: var(--gold); }
-.tr-adj-val, .tr-adj-note { margin-top: 2px; color: var(--muted); font-size: 12px; }
-.tr-adj .fx { color: #d0d0d0; font-size: 13px; }
-.tr-adj .fx .tr-chip { margin-left: 4px; vertical-align: 1px; }
-.tr-fx-line { display: block; margin-top: 2px; }
-.tr-fx-line.is-multi { padding-left: 12px; text-indent: -12px; }
-.tr-fx-line.is-multi::before { content: "・"; color: var(--muted); }
-.tr-fx-line.is-multi > * { text-indent: 0; }
-.tr-maybe li { border-left-style: dashed; }
-.tr-adj-act { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
-.tr-adj-act a.btn-small { display: inline-flex; align-items: center; text-decoration: none; }

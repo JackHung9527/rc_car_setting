@@ -151,9 +151,9 @@ main { max-width: 560px; margin: 0 auto; padding: 10px 12px 48px; }
 .picker { width: 100%; min-height: 40px; margin-bottom: 8px; padding: 6px 10px; border: 1px solid var(--frame); border-radius: 0; background: var(--field); font-weight: 700; }
 
 /* 按鈕與卡片共用的外框：直角、細灰框、深色漸層。各自的選取狀態寫在後面各段。
-   th-chip、th-goal 是設定理論頁的類別，tr-cat-btn 是車輛特性（css/traits.css）的類別，外框相同所以列在一起 */
+   th-chip、th-goal 是設定理論頁的類別，外框相同所以列在一起 */
 
-.btn, .back, .btn-small, .step, .reset, .seg-btn, .pin-tab, .card-btn, .th-chip, .th-goal, .tr-cat-btn {
+.btn, .back, .btn-small, .step, .reset, .seg-btn, .pin-tab, .card-btn, .th-chip, .th-goal {
   border: 1px solid var(--line);
   border-radius: 0;
   background: var(--panel);
@@ -161,7 +161,7 @@ main { max-width: 560px; margin: 0 auto; padding: 10px 12px 48px; }
   font-family: var(--font-race);
 }
 /* 按下去的回饋：官網滑過方塊時的銀色光暈 */
-.btn:active, .back:active, .btn-small:active, .step:active, .seg-btn:active, .pin-tab:active, .card-btn:active, .th-chip:active, .th-goal:active, .tr-cat-btn:active {
+.btn:active, .back:active, .btn-small:active, .step:active, .seg-btn:active, .pin-tab:active, .card-btn:active, .th-chip:active, .th-goal:active {
   border-color: var(--silver);
   box-shadow: 0 0 10px #cecece;
 }
